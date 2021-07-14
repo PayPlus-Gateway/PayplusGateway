@@ -8,6 +8,7 @@
         "magento/module-payment": "100.0.*",
         "magento/framework": "100.0.*"
     },
+    "minimum-stability": "stable",
     "type": "magento2-module",
     "version": "100.0.3",
     "license": [
