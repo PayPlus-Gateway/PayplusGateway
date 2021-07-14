@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <payplus_gateway>
+                <debug>0</debug>
+                <active>0</active>
+                <model>PayplusGatewayFacade</model>
+                <merchant_gateway_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
+                <order_status>pending_payment</order_status>
+                <payment_action>order</payment_action>
+                <title>Payplus</title>
+                <currency>ILS</currency>
+                <can_order_vault>1</can_order_vault>
+                <can_authorize>1</can_authorize>
+                <can_use_internal>0</can_use_internal>
+                <can_capture>1</can_capture>
+                <can_void>0</can_void>
+                <can_refund>1</can_refund>
+                <can_use_checkout>1</can_use_checkout>
+                <can_order>1</can_order>
+                <is_gateway>1</is_gateway>
+                <sort_order>1</sort_order>
+                <is_offline>0</is_offline>
+                <api_configuration>
+                    <dev_mode>0</dev_mode>
+                </api_configuration>
+                <display_settings>
+                    <iframe_or_redirect>redirect</iframe_or_redirect>
+                    <iframe_height>700</iframe_height>
+                </display_settings>
+                <orders_config>
+                    <payment_action>0</payment_action>
+                    <email_upon_success>1</email_upon_success>
+                </orders_config>
+                <payment_page>
+                    <hide_payplus_icon>0</hide_payplus_icon>
+                    <use_callback>0</use_callback>
+                    <hide_payments>0</hide_payments>
+                    <hide_id_card_number>0</hide_id_card_number>
+                </payment_page>
+            </payplus_gateway>
+            <payplus_cc_vault>
+                    <model>PayplusCreditCardVaultFacade</model>        
+                    <title>Stored Cards (Payplus)</title>
+            </payplus_cc_vault>
+        </payment>
+    </default>
+</config>

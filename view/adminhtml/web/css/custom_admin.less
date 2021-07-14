@@ -1,0 +1,38 @@
+[lang=he] {
+    #row_payment_other_payplus_gateway {
+
+        direction: rtl !important;
+
+        .config .label {
+            text-align: left !important;
+
+            span[data-config-scope]:before {
+                right: initial !important;
+                left: 0;
+            }
+        }
+
+        .entry-edit-head a:before {
+            left: auto !important;
+            right: 0 !important;
+        }
+
+        .entry-edit-head a {
+            padding-right: 2.8rem !important;
+            padding-left: 0 !important;
+        }
+
+        select {
+            background-position: 12px -33px, 0,  3.2rem 0 !important;
+            padding-left: 44px;
+            padding-right: 1rem;
+        }
+
+        #payment_other_payplus_gateway_api_configuration_payment_page_uid,
+        #payment_other_payplus_gateway_api_configuration_api_key,
+        #payment_other_payplus_gateway_api_configuration_secret_key {
+            direction: ltr !important;
+        }
+    }
+}
+
