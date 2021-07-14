@@ -8,7 +8,6 @@
         "magento/module-payment": "100.2.*||100.3.*||^100.4.0",
         "magento/framework": "100.2.*||100.3.*||^100.4.0"
     },
-    "minimum-stability": "stable",
     "type": "magento2-module",
     "license": [
         "OSL-3.0",
