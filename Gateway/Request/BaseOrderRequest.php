@@ -40,7 +40,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $orderDetails['customer']['customer_uid'] = $order->getCustomerId();
             }
             $orderDetails['customer']['email'] = $quote->getCustomerEmail();
-            if ($address) {
+            if ($address && method_exists($address,'getName')) {
                 $orderDetails['customer']['full_name'] = $address->getName();
             }
         }
