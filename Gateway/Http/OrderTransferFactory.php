@@ -19,10 +19,12 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
     public function __construct(
         TransferBuilder $transferBuilder,
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
-        \Magento\Store\Model\StoreManagerInterface $storeManager
+        \Magento\Store\Model\StoreManagerInterface $storeManager,
+        \Magento\Framework\Locale\Resolver $store
     ) {
         $this->transferBuilder = $transferBuilder;
         $this->storeManager= $storeManager;
+        $this->_store= $store;
         parent::__construct($config);
     }
     
@@ -68,7 +70,8 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             ) {
             $request['create_token'] = true;
         }
-
+        $localeLetter = $this->_store->getLocale();
+        $request['language_code'] = substr($localeLetter,0,2);
         $transfer = $this->transferBuilder
             ->setBody($request)
             ->setUri($this->gatewayMethod)
