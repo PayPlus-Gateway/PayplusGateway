@@ -44,10 +44,22 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $orderDetails['customer']['full_name'] = $address->getName();
             }
         }
-        foreach ($order->getItems() as $item) {
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $priceCurrencyFactory = $objectManager->get('Magento\Directory\Model\CurrencyFactory');
+        $storeManager = $objectManager->get('Magento\Store\Model\StoreManagerInterface');
+        $currencyCodeTo = $storeManager->getStore()->getCurrentCurrency()->getCode();
+        $currencyCodeFrom = $storeManager->getStore()->getBaseCurrency()->getCode();
+        $rate = $priceCurrencyFactory->create()->load($currencyCodeTo)->getAnyRate($currencyCodeFrom);
+        $totalItems = 0;
+        foreach ($order->getItems() as $item) { 
+            $itemAmount = $item->getPriceInclTax(); // product price
+            if ($currencyCodeTo !=  $currencyCodeFrom) {
+                $itemAmount = round($itemAmount * $rate);
+            }
+            
             $orderDetails['items'][] = [
                 'name'          => $item->getName(),
-                'price'         => $item->getPriceInclTax(),
+                'price'         => $itemAmount,
                 'quantity'   => $item->getQtyOrdered(),
             ];
         }
