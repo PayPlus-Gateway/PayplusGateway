@@ -231,4 +231,18 @@
             <argument name="messageMapping" xsi:type="object">Payplus\PayplusGateway\Gateway\ErrorMapper\VirtualMappingData</argument>
         </arguments>
     </virtualType>
+
+    <type name="Payplus\PayplusGateway\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Payplus\PayplusGateway\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">PayplusLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Payplus\PayplusGateway\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

@@ -20,18 +20,19 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         TransferBuilder $transferBuilder,
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \Magento\Framework\Locale\Resolver $store
+        \Magento\Framework\Locale\Resolver $store,
+        \Payplus\PayplusGateway\Logger\Logger $logger
     ) {
         $this->transferBuilder = $transferBuilder;
         $this->storeManager= $storeManager;
         $this->_store= $store;
+        $this->_logger= $logger;
         parent::__construct($config);
     }
     
     public function create(array $data)
     {
         $request = $data['orderDetails'];
-        
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
         $getStoreURL = $this->storeManager->getStore()->getBaseUrl();
         $request['payment_page_uid'] = $this->config->getValue(
@@ -47,6 +48,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
                 $scp
             );
         }
+
         if ($this->config->getValue('payment/payplus_gateway/payment_page/send_add_data_param', $scp) == 1) {
             $request['add_data'] = 1;
         }
@@ -71,11 +73,13 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             $request['create_token'] = true;
         }
         $localeLetter = $this->_store->getLocale();
-        $request['language_code'] = substr($localeLetter,0,2);
+        $request['language_code'] = substr($localeLetter, 0, 2);
         $transfer = $this->transferBuilder
             ->setBody($request)
             ->setUri($this->gatewayMethod)
             ->build();
+
+        $this->_logger->debugOrder("Order request", $request);
         return $transfer;
     }
 }

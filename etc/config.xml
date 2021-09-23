@@ -32,6 +32,7 @@
                 <orders_config>
                     <payment_action>0</payment_action>
                     <email_upon_success>1</email_upon_success>
+                    <debug_payplus_orders>0</debug_payplus_orders>
                 </orders_config>
                 <payment_page>
                     <hide_payplus_icon>0</hide_payplus_icon>

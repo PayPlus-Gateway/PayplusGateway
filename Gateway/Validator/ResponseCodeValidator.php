@@ -7,10 +7,20 @@ namespace Payplus\PayplusGateway\Gateway\Validator;
 
 use Magento\Payment\Gateway\Validator\AbstractValidator;
 use Magento\Payment\Gateway\Validator\ResultInterface;
-use Payplus\PayplusGateway\Gateway\Http\Client\Client;
+use Magento\Payment\Gateway\Validator\ResultInterfaceFactory;
 
 class ResponseCodeValidator extends AbstractValidator
 {
+    protected $_logger;
+    public function __construct(
+        ResultInterfaceFactory $resultFactory,
+        \Payplus\PayplusGateway\Logger\Logger $logger,
+        \Magento\Framework\App\Config\ScopeConfigInterface $config
+    ) {
+        parent::__construct($resultFactory);
+        $this->_logger = $logger;
+        $this->config = $config;
+    }
     const RESULT_CODE = 'RESULT_CODE';
 
     /**
@@ -26,7 +36,7 @@ class ResponseCodeValidator extends AbstractValidator
         }
 
         $response = $validationSubject['response'];
-
+        $this->_logger->debugOrder("Order response", $response);
         if ($this->isSuccessfulTransaction($response)) {
             return $this->createResult(
                 true,
@@ -35,7 +45,11 @@ class ResponseCodeValidator extends AbstractValidator
         } else {
             return $this->createResult(
                 false,
-                [__('Gateway rejected the transaction.')]
+                [__('Gateway rejected the transaction.')],
+                [
+                    'gatewayresponse'=>json_encode($response),
+                    'paymentData'=> json_encode($validationSubject['payment']->getPayment()->toArray())
+                ]
             );
         }
     }
