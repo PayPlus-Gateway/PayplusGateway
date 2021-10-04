@@ -245,4 +245,8 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Checkout\Api\PaymentInformationManagementInterface">
+        <plugin name="validate-agreements" disabled="true" />
+    </type>
+    
 </config>
