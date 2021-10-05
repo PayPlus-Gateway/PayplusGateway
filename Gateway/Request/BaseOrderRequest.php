@@ -73,7 +73,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         }
         $totalItems = 0;
         foreach ($orderDetails['items'] as $item) {
-            $quantity = ($item['quantity'])?:1;
+            $quantity = ($item['quantity']) ?? 1;
             $totalItems+= ($item['price'] * $quantity);
         }
         $orderDetails['amount'] = $order->getGrandTotalAmount();

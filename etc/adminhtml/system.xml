@@ -10,7 +10,7 @@
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>PayPlus - Payment Gateway</label>
-                <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
@@ -21,7 +21,7 @@
                     <attribute type="expanded">1</attribute>
                     <label>API configuration</label>
 
-                    <field id="dev_mode" translate="label" type="select" sortOrder="32" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="dev_mode" translate="label" type="select" sortOrder="32" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Sandbox mode</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
@@ -36,7 +36,7 @@
                     </field>
 
 
-                    <field id="enable_cc_vault" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="enable_cc_vault" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable Credit card vault storage</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <config_path>payment/payplus_cc_vault/active</config_path>
@@ -45,7 +45,7 @@
                 <group id="display_settings" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
                     <label>Display settings</label>
-                    <field id="iframe_or_redirect" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="iframe_or_redirect" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Payment form</label>
                         <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\IframeOrRedirect</source_model>
 
@@ -61,23 +61,23 @@
                 <group id="payment_page" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
                     <label>Payment page</label>
-                    <field id="hide_payplus_icon" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="hide_payplus_icon" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Hide the Payplus logo in cart</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
-                    <field id="use_callback" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="use_callback" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Use Callback</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
-                    <field id="send_add_data_param" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="send_add_data_param" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Send Add Data parameter</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
-                   <field id="hide_id_card_number" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
+                   <field id="hide_id_card_number" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Hide ID card number on payment page</label>
                         <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\DefaultOrHide</source_model>
                     </field>
-                   <field id="hide_payments" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
+                   <field id="hide_payments" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Hide payments field</label>
                         <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\DefaultOrHide</source_model>
                     </field>
@@ -85,19 +85,19 @@
                 <group id="orders_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
                     <label>Order configuration</label>
-                    <field id="payment_action" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="payment_action" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Charge Method</label>
                         <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\PaymentAction</source_model>
                     </field>
-                    <field id="email_upon_success" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="email_upon_success" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Send email notification from the Payplus system upon successful transaction</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
-                    <field id="email_upon_fail" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="email_upon_fail" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Send email notification from the Payplus system upon failed transaction</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
-                    <field id="debug_payplus_orders" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <field id="debug_payplus_orders" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Debug payplus orders</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
