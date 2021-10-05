@@ -50,7 +50,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         }
 
         if ($this->config->getValue('payment/payplus_gateway/payment_page/send_add_data_param', $scp) == 1) {
-            $request['add_data'] = 1;
+            $request['add_data'] = "1";
         }
         if ($this->config->getValue('payment/payplus_gateway/payment_page/use_callback', $scp) == 1) {
             $request['refURL_callback'] = $getStoreURL.'payplus_gateway/ws/callbackpoint';
