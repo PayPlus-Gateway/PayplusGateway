@@ -67,7 +67,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         if ($shippingAmount) {
             $orderDetails['items'][] = [
                 'name'         => 'Shipping',
-                'price'         => $shippingAmount,
+                'price'         => $quote->getShippingAddress()->getShippingInclTax(),
                 'shipping'   => true,
             ];
         }
