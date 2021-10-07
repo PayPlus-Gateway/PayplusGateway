@@ -77,7 +77,7 @@ abstract class BaseOrderRequest implements BuilderInterface
             $totalItems+= ($item['price'] * $quantity);
         }
         $orderDetails['amount'] = $order->getGrandTotalAmount();
-        if ($currencyCodeTo != $currencyCodeFrom && $orderDetails['amount'] != $totalItems) {
+        if ($orderDetails['amount'] != $totalItems) {
             $orderDetails['items'][] = [
                 'name'         => __('Currency conversion rounding'),
                 'price'         => $orderDetails['amount'] - $totalItems,
