@@ -38,6 +38,8 @@ class OrderResponse
                 $payment->registerAuthorizationNotification($params['amount']);
                 $payment->setIsTransactionPending(true);
                 $payment->setIsTransactionClosed(false);
+                $this->order->setState('pending_payment');
+                $this->order->setStatus('pending');
             }
             
             if ($params['type'] =='Charge') {
@@ -47,7 +49,7 @@ class OrderResponse
 
             $status = true;
         }
-   
+        
         $payment->setCcStatus($params['status_code']);
         $payment->setCcLast4($params['four_digits']);
         $payment->setTransactionId($params['transaction_uid']);
@@ -56,6 +58,7 @@ class OrderResponse
         $payment->setCcExpMonth($params['expiry_month']);
         $payment->setCcExpYear($params['expiry_year']);
         $paymentAdditionalInformation = ['paymentPageResponse'=>$params];
+        
         if (isset($params['token_uid'])
             && $params['token_uid']
             && $this->order->getCustomerId()

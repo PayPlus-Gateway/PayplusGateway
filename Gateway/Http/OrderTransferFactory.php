@@ -54,6 +54,21 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         }
         if ($this->config->getValue('payment/payplus_gateway/payment_page/use_callback', $scp) == 1) {
             $request['refURL_callback'] = $getStoreURL.'payplus_gateway/ws/callbackpoint';
+            if ($this->config->getValue('payment/payplus_gateway/payment_page/success_page_action', $scp) == 0) {
+                unset($request['refURL_success']);
+            } else if($this->config->getValue('payment/payplus_gateway/payment_page/success_page_action', $scp) == 2) {
+                $request['refURL_success'] = $this->config->getValue('payment/payplus_gateway/payment_page/success_page_custom_url', $scp);
+            }
+            if ($this->config->getValue('payment/payplus_gateway/payment_page/error_page_action', $scp) == 0) {
+                unset($request['refURL_failure']);
+            } else if($this->config->getValue('payment/payplus_gateway/payment_page/error_page_action', $scp) == 2) {
+                $request['refURL_failure'] = $this->config->getValue('payment/payplus_gateway/payment_page/error_page_custom_url', $scp);
+            }
+            if ($this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_action', $scp) == 0) {
+                unset($request['refURL_cancel']);
+            } else if($this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_action', $scp) == 2) {
+                $request['refURL_cancel'] = $this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_custom_url', $scp);
+            }
         }
         if ($this->config->getValue('payment/payplus_gateway/payment_page/hide_id_card_number', $scp)) {
             $request['hide_identification_id'] = true;
@@ -78,7 +93,6 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             ->setBody($request)
             ->setUri($this->gatewayMethod)
             ->build();
-
         $this->_logger->debugOrder("Order request", $request);
         return $transfer;
     }

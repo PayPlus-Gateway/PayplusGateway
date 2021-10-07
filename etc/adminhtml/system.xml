@@ -69,6 +69,45 @@
                         <label>Use Callback</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
+                    <field id="success_page_action" translate="label" type="select" sortOrder="21" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Success redirect</label>
+                        <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\TerminalMagentoCustom</source_model>
+                        <depends>
+                            <field id="use_callback">1</field>
+                        </depends>
+                    </field>
+                    <field id="success_page_custom_url" translate="label" type="text"  sortOrder="22" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Custom success URL</label>
+                        <depends>
+                            <field id="success_page_action">2</field>
+                        </depends>
+                    </field>
+                    <field id="error_page_action" translate="label" type="select" sortOrder="23" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Error redirect</label>
+                        <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\TerminalMagentoCustom</source_model>
+                        <depends>
+                            <field id="use_callback">1</field>
+                        </depends>
+                    </field>
+                    <field id="error_page_custom_url" translate="label" type="text"  sortOrder="24" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Error success URL</label>
+                        <depends>
+                            <field id="error_page_action">2</field>
+                        </depends>
+                    </field>
+                    <field id="cancel_page_action" translate="label" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Cancel redirect</label>
+                        <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\TerminalMagentoCustom</source_model>
+                        <depends>
+                            <field id="use_callback">1</field>
+                        </depends>
+                    </field>
+                    <field id="cancel_page_custom_url" translate="label" type="text"  sortOrder="26" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Cancel success URL</label>
+                        <depends>
+                            <field id="cancel_page_action">2</field>
+                        </depends>
+                    </field>
                     <field id="send_add_data_param" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Send Add Data parameter</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>

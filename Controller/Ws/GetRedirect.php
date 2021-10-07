@@ -57,6 +57,7 @@ class GetRedirect implements \Magento\Framework\App\ActionInterface
         $payment->setIsTransactionClosed(false);
         
         $order->setStatus('pending_payment');
+        $order->setState('pending_payment');
         $order->save();
         return $result->setData($resultData);
     }
