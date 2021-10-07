@@ -30,14 +30,18 @@ abstract class BaseOrderRequest implements BuilderInterface
         $order = $payment->getOrder();
         $address = $order->getShippingAddress();
         $quote = $this->session->getQuote();
-        
+                
+        $orderDetails = [
+            'currency_code'=>$order->getCurrencyCode(),
+            'more_info'=>$order->getOrderIncrementId()
+        ];
         if ($quote) {
             if ($order->getCustomerId()) {
                 $orderDetails['customer']['customer_uid'] = $order->getCustomerId();
             }
             $orderDetails['customer']['email'] = $quote->getCustomerEmail();
             if ($address && method_exists($address, 'getName')) {
-                $orderDetails['customer']['full_name'] = $address->getName();
+                $orderDetails['customer']['customer_name'] = $address->getName();
             }
         }
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
@@ -46,11 +50,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         $currencyCodeTo = $storeManager->getStore()->getCurrentCurrency()->getCode();
         $currencyCodeFrom = $storeManager->getStore()->getBaseCurrency()->getCode();
         $rate = $priceCurrencyFactory->create()->load($currencyCodeTo)->getAnyRate($currencyCodeFrom);
-        
-        $orderDetails = [
-            'currency_code'=>$order->getCurrencyCode(),
-            'more_info'=>$order->getOrderIncrementId()
-        ];
+
         foreach ($order->getItems() as $item) {
             $itemAmount = $item->getPriceInclTax() * 100; // product price
             if ($currencyCodeTo !=  $currencyCodeFrom) {
