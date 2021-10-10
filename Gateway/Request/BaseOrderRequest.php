@@ -13,37 +13,43 @@ abstract class BaseOrderRequest implements BuilderInterface
         \Magento\Customer\Model\Session $customerSession,
         \Payplus\PayplusGateway\Logger\Logger $logger
     ) {
-        $this->session= $session;
-        $this->customerSession= $customerSession;
+        $this->session = $session;
+        $this->customerSession = $customerSession;
         $this->_logger = $logger;
     }
 
     protected function collectCartData(array $buildSubject)
     {
-        if (!isset($buildSubject['payment'])
+        if (
+            !isset($buildSubject['payment'])
             || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
         ) {
             throw new \InvalidArgumentException('Payment data object should be provided');
         }
         $payment = $buildSubject['payment'];
-        
+
         $order = $payment->getOrder();
         $address = $order->getShippingAddress();
         $quote = $this->session->getQuote();
-                
+
         $orderDetails = [
-            'currency_code'=>$order->getCurrencyCode(),
-            'more_info'=>$order->getOrderIncrementId()
+            'currency_code' => $order->getCurrencyCode(),
+            'more_info' => $order->getOrderIncrementId()
         ];
-        if ($quote) {
-            if ($order->getCustomerId()) {
-                $orderDetails['customer']['customer_uid'] = $order->getCustomerId();
-            }
-            $orderDetails['customer']['email'] = $quote->getCustomerEmail();
-            if ($address && method_exists($address, 'getName')) {
-                $orderDetails['customer']['customer_name'] = $address->getName();
+        $customer = [];
+        if ($quote && $address) {
+            if (method_exists($address, 'getFirstName')) {
+                $customer['email'] = $quote->getCustomerEmail();
+                $customer['customer_name'] = $address->getFirstName() . ' ' . $address->getLastName();
+                $customer['city'] = $address->getCity();
+                $customer['country_iso'] = $address->getCountryId();
             }
         }
+
+        if (!empty($customer)) {
+            $orderDetails['customer'] = $customer;
+        }
+
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $priceCurrencyFactory = $objectManager->get(\Magento\Directory\Model\CurrencyFactory::class);
         $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
@@ -60,6 +66,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'name'          => $item->getName(),
                 'price'         => floor($itemAmount) / 100,
                 'quantity'   => $item->getQtyOrdered(),
+                'barcode'   => $item->getSku(),
             ];
         }
 
@@ -74,7 +81,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         $totalItems = 0;
         foreach ($orderDetails['items'] as $item) {
             $quantity = ($item['quantity']) ?? 1;
-            $totalItems+= ($item['price'] * $quantity);
+            $totalItems += ($item['price'] * $quantity);
         }
         $orderDetails['amount'] = $order->getGrandTotalAmount();
         if ($orderDetails['amount'] != $totalItems) {
@@ -84,9 +91,10 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'quantity'   => 1,
             ];
         }
+        
         return [
-            'orderDetails' =>$orderDetails,
-            'meta'=>[]
+            'orderDetails' => $orderDetails,
+            'meta' => []
         ];
     }
 }
