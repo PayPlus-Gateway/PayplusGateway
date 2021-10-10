@@ -89,6 +89,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         }
         $localeLetter = $this->_store->getLocale();
         $request['language_code'] = substr($localeLetter, 0, 2);
+        $request['invoice_language'] = substr($localeLetter, 0, 2);
         $transfer = $this->transferBuilder
             ->setBody($request)
             ->setUri($this->gatewayMethod)
