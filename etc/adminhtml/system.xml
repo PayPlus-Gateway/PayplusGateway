@@ -141,6 +141,18 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
                 </group>
+                <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <attribute type="expanded">1</attribute>
+                    <label>Invoices configuration</label>
+                    <field id="invoice_language_same_as_terminal" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Request invoice in the same language as the terminal</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
+                    <field id="no_vat_if_set_to_no_vat" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Set invoice to Tax exempt based on Magento's tax settings</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
+                </group>
             </group>
         </section>
     </system>

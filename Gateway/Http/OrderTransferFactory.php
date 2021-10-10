@@ -89,7 +89,11 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         }
         $localeLetter = $this->_store->getLocale();
         $request['language_code'] = substr($localeLetter, 0, 2);
-        $request['invoice_language'] = substr($localeLetter, 0, 2);
+        
+        if ($this->config->getValue('payment/payplus_gateway/invoices_config/invoice_language_same_as_terminal', $scp)) {
+            $request['invoice_language'] = substr($localeLetter, 0, 2);
+        }
+
         $transfer = $this->transferBuilder
             ->setBody($request)
             ->setUri($this->gatewayMethod)

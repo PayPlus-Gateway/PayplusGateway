@@ -43,6 +43,10 @@
                     <hide_payments>0</hide_payments>
                     <hide_id_card_number>0</hide_id_card_number>
                 </payment_page>
+                <invoices_config>
+                    <invoice_language_same_as_terminal>1</invoice_language_same_as_terminal>
+                    <no_vat_if_set_to_no_vat>1</no_vat_if_set_to_no_vat>
+                </invoices_config>
             </payplus_gateway>
             <payplus_cc_vault>
                     <model>PayplusCreditCardVaultFacade</model>        

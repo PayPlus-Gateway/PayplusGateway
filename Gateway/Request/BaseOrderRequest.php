@@ -20,6 +20,7 @@ abstract class BaseOrderRequest implements BuilderInterface
 
     protected function collectCartData(array $buildSubject)
     {
+        $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
         if (
             !isset($buildSubject['payment'])
             || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
@@ -43,6 +44,14 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $customer['customer_name'] = $address->getFirstName() . ' ' . $address->getLastName();
                 $customer['city'] = $address->getCity();
                 $customer['country_iso'] = $address->getCountryId();
+                if (method_exists($address, 'getStreet')) {
+                    $addressLines = $address->getStreet();
+                    if ($addressLines && is_array($addressLines)) {
+                        $customer['address'] = implode(' ',$addressLines);
+                    }
+                } elseif (method_exists($address, 'getStreetLine1')) {
+                    $customer['address'] = $address->GetStreetLine1() . ' ' . $address->GetStreetLine2();
+                }
             }
         }
 
@@ -51,6 +60,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         }
 
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
         $priceCurrencyFactory = $objectManager->get(\Magento\Directory\Model\CurrencyFactory::class);
         $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
         $currencyCodeTo = $storeManager->getStore()->getCurrentCurrency()->getCode();
@@ -72,9 +82,13 @@ abstract class BaseOrderRequest implements BuilderInterface
 
         $shippingAmount  = $payment->getPayment()->getBaseShippingAmount();
         if ($shippingAmount) {
+            $itemAmount = $quote->getShippingAddress()->getShippingInclTax();
+            if ($currencyCodeTo !=  $currencyCodeFrom) {
+                $itemAmount =  $itemAmount * $rate;
+            }
             $orderDetails['items'][] = [
                 'name'         => 'Shipping',
-                'price'         => $quote->getShippingAddress()->getShippingInclTax(),
+                'price'         => $itemAmount,
                 'shipping'   => true,
             ];
         }
@@ -91,7 +105,14 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'quantity'   => 1,
             ];
         }
-        
+
+        if ( $config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 1) {
+            $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
+            if ($appliedTaxes !== null && empty($appliedTaxes)) {
+                $orderDetails['paying_vat'] = false;
+            }
+        }
+
         return [
             'orderDetails' => $orderDetails,
             'meta' => []
