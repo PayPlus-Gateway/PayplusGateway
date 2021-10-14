@@ -21,8 +21,7 @@ abstract class BaseOrderRequest implements BuilderInterface
     protected function collectCartData(array $buildSubject)
     {
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
-        if (
-            !isset($buildSubject['payment'])
+        if (!isset($buildSubject['payment'])
             || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
         ) {
             throw new \InvalidArgumentException('Payment data object should be provided');
@@ -47,7 +46,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 if (method_exists($address, 'getStreet')) {
                     $addressLines = $address->getStreet();
                     if ($addressLines && is_array($addressLines)) {
-                        $customer['address'] = implode(' ',$addressLines);
+                        $customer['address'] = implode(' ', $addressLines);
                     }
                 } elseif (method_exists($address, 'getStreetLine1')) {
                     $customer['address'] = $address->GetStreetLine1() . ' ' . $address->GetStreetLine2();
@@ -106,7 +105,7 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }
 
-        if ( $config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 1) {
+        if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 1) {
             $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
             if ($appliedTaxes !== null && empty($appliedTaxes)) {
                 $orderDetails['paying_vat'] = false;

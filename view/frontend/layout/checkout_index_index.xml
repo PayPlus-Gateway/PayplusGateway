@@ -10,6 +10,12 @@
         <css src="Payplus_PayplusGateway::css/checkout_page.css" />
     </head>
     <body>
+        <referenceContainer name='root'>
+			<block
+				class='Payplus\PayplusGateway\Block\StaticRenderer'
+				name='Payplus_PayplusGateway_Block_StaticRenderer'
+			/>
+		</referenceContainer>
         <referenceBlock name="checkout.root">
             <arguments>
                 <argument name="jsLayout" xsi:type="array">
