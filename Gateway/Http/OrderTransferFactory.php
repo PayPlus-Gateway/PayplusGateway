@@ -61,21 +61,22 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
                 ->config
                 ->getValue('payment/payplus_gateway/payment_page/success_page_custom_url', $scp);
             }
-            if ($this->config->getValue('payment/payplus_gateway/payment_page/error_page_action', $scp) == 0) {
-                unset($request['refURL_failure']);
-            } elseif ($this->config->getValue('payment/payplus_gateway/payment_page/error_page_action', $scp) == 2) {
-                $request['refURL_failure'] = $this
-                    ->config
-                    ->getValue('payment/payplus_gateway/payment_page/error_page_custom_url', $scp);
-            }
-            if ($this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_action', $scp) == 0) {
-                unset($request['refURL_cancel']);
-            } elseif ($this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_action', $scp) == 2) {
-                $request['refURL_cancel'] = $this
-                    ->config
-                    ->getValue('payment/payplus_gateway/payment_page/cancel_page_custom_url', $scp);
-            }
         }
+        if ($this->config->getValue('payment/payplus_gateway/payment_page/error_page_action', $scp) == 0) {
+            unset($request['refURL_failure']);
+        } elseif ($this->config->getValue('payment/payplus_gateway/payment_page/error_page_action', $scp) == 2) {
+            $request['refURL_failure'] = $this
+                ->config
+                ->getValue('payment/payplus_gateway/payment_page/error_page_custom_url', $scp);
+        }
+        if ($this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_action', $scp) == 0) {
+            unset($request['refURL_cancel']);
+        } elseif ($this->config->getValue('payment/payplus_gateway/payment_page/cancel_page_action', $scp) == 2) {
+            $request['refURL_cancel'] = $this
+                ->config
+                ->getValue('payment/payplus_gateway/payment_page/cancel_page_custom_url', $scp);
+        }
+        
         if ($this->config->getValue('payment/payplus_gateway/payment_page/hide_id_card_number', $scp)) {
             $request['hide_identification_id'] = true;
         }
