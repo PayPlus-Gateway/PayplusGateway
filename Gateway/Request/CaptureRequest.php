@@ -7,28 +7,8 @@ use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Sales\Api\Data\OrderPaymentInterface;
 
-class CaptureRequest implements BuilderInterface
+class CaptureRequest extends BaseOrderRequest
 {
-    /**
-     * @var ConfigInterface
-     */
-    private $config;
-
-    /**
-     * @param ConfigInterface $config
-     */
-    public function __construct(
-        ConfigInterface $config
-    ) {
-        $this->config = $config;
-    }
-
-    /**
-     * Builds ENV request
-     *
-     * @param array $buildSubject
-     * @return array
-     */
     public function build(array $buildSubject)
     {
         if (!isset($buildSubject['payment'])
@@ -36,38 +16,64 @@ class CaptureRequest implements BuilderInterface
         ) {
             throw new \InvalidArgumentException('Payment data object should be provided');
         }
-
-        /** @var PaymentDataObjectInterface $paymentDO */
-        $paymentDO = $buildSubject['payment'];
-
-        $order = $paymentDO->getOrder();
-
-        $payment = $paymentDO->getPayment();
-
-        if (!$payment instanceof OrderPaymentInterface) {
-            throw new \LogicException('Order payment should be provided.');
-        }
-        $orderDetails =[
-            'transaction_uid'=>$payment->getLastTransId(),
+        $payment = $buildSubject['payment'];
+        $order = $payment->getOrder();
+        $orderDetails = [
+            'currency_code' => $order->getCurrencyCode(),
+            'more_info' => $order->getOrderIncrementId(),
+            'transaction_uid'=>$payment->getPayment()->getLastTransId(),
             'amount'=>$buildSubject['amount']
         ];
+
+        if (!empty($customer)) {
+            $orderDetails['customer'] = $customer;
+        }
+
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $priceCurrencyFactory = $objectManager->get(\Magento\Directory\Model\CurrencyFactory::class);
+        $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
+        $currencyCodeTo = $storeManager->getStore()->getCurrentCurrency()->getCode();
+        $currencyCodeFrom = $storeManager->getStore()->getBaseCurrency()->getCode();
+        $rate = $priceCurrencyFactory->create()->load($currencyCodeTo)->getAnyRate($currencyCodeFrom);
+
         foreach ($order->getItems() as $item) {
+            $itemAmount = $item->getPriceInclTax() * 100; // product price
+            if ($currencyCodeTo !=  $currencyCodeFrom) {
+                $itemAmount = $itemAmount * $rate;
+            }
             $orderDetails['items'][] = [
                 'name'          => $item->getName(),
-                'price'         => $item->getPrice(),
+                'price'         => floor($itemAmount) / 100,
                 'quantity'   => $item->getQtyOrdered(),
+                'barcode'   => $item->getSku(),
             ];
         }
 
-        $shippingAmount  = $payment->getBaseShippingAmount();
+        $shippingAmount  = $payment->getPayment()->getBaseShippingAmount();
         if ($shippingAmount) {
+            $itemAmount = $payment->getPayment()->getOrder()->getShippingInclTax();
+            if ($currencyCodeTo !=  $currencyCodeFrom) {
+                $itemAmount =  $itemAmount * $rate;
+            }
             $orderDetails['items'][] = [
                 'name'         => 'Shipping',
-                'price'         => $shippingAmount,
+                'price'         => $itemAmount,
                 'shipping'   => true,
             ];
         }
-
-        return $orderDetails;
+        $totalItems = 0;
+        foreach ($orderDetails['items'] as $item) {
+            $quantity = ($item['quantity']) ?? 1;
+            $totalItems += ($item['price'] * $quantity);
+        }
+        $orderDetails['amount'] = $order->getGrandTotalAmount();
+        if ($orderDetails['amount'] != $totalItems) {
+            $orderDetails['items'][] = [
+                'name'         => __('Currency conversion rounding'),
+                'price'         => $orderDetails['amount'] - $totalItems,
+                'quantity'   => 1,
+            ];
+        }
+        return  $orderDetails;
     }
 }

@@ -1,38 +1,18 @@
 <?php
-
 /**
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
 
 /**
- * @var \Payplus\Payplus_Gateway\Block\Info $block
+ * @var \Magento\Payment\Block\Info $block
  * @see \Magento\Payment\Block\Info
  */
 $specificInfo = $block->getSpecificInformation();
-$paymentTitle = $block->getMethod()->getConfigData('title', $block->getInfo()->getOrder()->getStoreId());
+$title = $block->escapeHtml($block->getMethod()->getTitle());
 ?>
-<?= $block->escapeHtml($paymentTitle) ?>
-<?php if ($specificInfo): ?>
+<dl class="payment-method">
+    <dt class="title"><?= /* @noEscape */ $title ?></dt>
 
-    <table class="data-table admin__table-secondary">
-        <?php foreach ($specificInfo as $blockLabel => $blockValues): ?>
-            <tr>
-                <th colspan="2" class="admin__page-section-item-title">
-                    <span class="title"><?= $block->escapeHtml($blockLabel) ?>:</span>
-                </th>
-            </tr>
-            <?php foreach ($blockValues as $label => $value): ?>
-                <tr>
-                    <th><?= $block->escapeHtml($label) ?>:</th>
-                    <td>
-                        <?= $block->escapeHtml(
-                            nl2br($block->escapeHtml(implode("\n", $block->getValueAsArray($value, true))))
-                        ) ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </table>
-<?php endif; ?>
+</dl>
 <?= $block->getChildHtml() ?>

@@ -10,13 +10,17 @@ use function PHPUnit\Framework\isNull;
 
 class OrderResponse
 {
-    public function __construct($order)
-    {
+    public $order;
+    public $orderSender;
+    public function __construct($order) {
         $this->order = $order;
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $this->orderSender = $objectManager->create(\Magento\Sales\Model\Order\Email\Sender\OrderSender::class);
     }
 
     public function processResponse($params, $direct = false)
     {
+
         $payment = $this->order->getPayment();
         $status = false;
         if (!$direct) {
@@ -32,7 +36,8 @@ class OrderResponse
             $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_VOID;
             $payment->deny();
         } else {
-
+            $this->order->setCanSendNewEmailFlag(true);
+            $this->order->setSendEmail(true);
             if ($params['type'] =='Approval') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_AUTH;
                 $payment->registerAuthorizationNotification($params['amount']);
@@ -87,6 +92,7 @@ class OrderResponse
         }
         $payment->setAdditionalInformation($paymentAdditionalInformation);
         $this->order->save();
+        $this->orderSender->send($this->order);
         return $status;
     }
 }
