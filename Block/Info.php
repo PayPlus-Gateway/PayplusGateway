@@ -7,6 +7,8 @@ namespace Payplus\PayplusGateway\Block;
 
 use Magento\Framework\Phrase;
 use Magento\Payment\Block\ConfigurableInfo;
+use Magento\Sales\Helper\AdminTest;
+use Magento\Setup\Module\Di\Code\Reader\Decorator\Area;
 
 class Info extends ConfigurableInfo
 {
@@ -30,16 +32,20 @@ class Info extends ConfigurableInfo
          * @var \Magento\Sales\Model\Order\Payment\Interceptor
          */
         $info = $this->getInfo();
+        
         $displayData = [];
+        $frontDisplayData = [];
+
         $additionalInformation = $info->getAdditionalInformation();
         if (isset($additionalInformation['paymentPageResponse'])) {
             $adPage = [];
             $pageData = $additionalInformation['paymentPageResponse'];
 
             $textCapturedReturn =  ($pageData['type'] == 'Approval') ? 'authorized':'charged';
-            $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
-            $adPage['Status description'] = $pageData['status_description'];
-            $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
+            $frontDisplayData['Status'] = $frontDisplayData['Status'] = $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
+            
+            $frontDisplayData['Status description'] = $adPage['Status description'] = $pageData['status_description'];
+            $frontDisplayData['Amount '.$textCapturedReturn] = $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
             if (isset($additionalInformation['paymentPageResponse']['number_of_payments'])
                 && $additionalInformation['paymentPageResponse']['number_of_payments'] > 1) {
                 $adPage['Number of payments'] = $pageData['number_of_payments'];
@@ -73,7 +79,10 @@ class Info extends ConfigurableInfo
             
             $displayData['Refund Response'] = $refundResponse;
         }
-
+        if ($this->getArea() != 'adminhtml') {
+            return $transport->setData( ['Checkout page response:'=>$frontDisplayData]);
+            
+        }
         return $transport->setData($displayData);
     }
 
