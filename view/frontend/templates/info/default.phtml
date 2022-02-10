@@ -19,12 +19,12 @@ $paymentTitle = $block->getMethod()->getConfigData('title', $block->getInfo()->g
         <?php foreach ($specificInfo as $blockLabel => $blockValues): ?>
             <tr>
                 <th colspan="2" class="admin__page-section-item-title">
-                    <span class="title"><?= $block->escapeHtml($blockLabel) ?>:</span>
+                    <span class="title"><?= __($block->escapeHtml($blockLabel)) ?></span>
                 </th>
             </tr>
             <?php foreach ($blockValues as $label => $value): ?>
                 <tr>
-                    <th><?= $block->escapeHtml($label) ?>:</th>
+                    <th><?= __($block->escapeHtml($label)) ?>:</th>
                     <td>
                         <?= $block->escapeHtml(
                             nl2br($block->escapeHtml(implode("\n", $block->getValueAsArray($value, true))))

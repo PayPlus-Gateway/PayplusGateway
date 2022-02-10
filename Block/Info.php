@@ -42,10 +42,10 @@ class Info extends ConfigurableInfo
             $pageData = $additionalInformation['paymentPageResponse'];
 
             $textCapturedReturn =  ($pageData['type'] == 'Approval') ? 'authorized':'charged';
-            $frontDisplayData['Status'] = $frontDisplayData['Status'] = $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
+            $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
             
             $frontDisplayData['Status description'] = $adPage['Status description'] = $pageData['status_description'];
-            $frontDisplayData['Amount '.$textCapturedReturn] = $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
+            $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
             if (isset($additionalInformation['paymentPageResponse']['number_of_payments'])
                 && $additionalInformation['paymentPageResponse']['number_of_payments'] > 1) {
                 $adPage['Number of payments'] = $pageData['number_of_payments'];
@@ -54,6 +54,18 @@ class Info extends ConfigurableInfo
             }
             if (isset($additionalInformation['paymentPageResponse']['identification_number'])) {
                 $adPage['Identification card number'] = $pageData['identification_number'];
+            }
+            if (isset($additionalInformation['paymentPageResponse']['approval_num'])) {
+                $frontDisplayData['Approval number'] = $adPage['Approval number'] = $pageData['approval_num'];
+            }
+            if (isset($additionalInformation['paymentPageResponse']['four_digits'])) {
+                $frontDisplayData['Last four digits'] = $adPage['Last four digits'] = $pageData['four_digits'];
+            }
+            if (isset($additionalInformation['paymentPageResponse']['expiry_month'])
+                && isset($additionalInformation['paymentPageResponse']['expiry_year'])
+                ) {
+                    $frontDisplayData['Expiry'] = $adPage['Expiry'] = $additionalInformation['paymentPageResponse']['expiry_month']
+                    .'/'.$additionalInformation['paymentPageResponse']['expiry_year'];
             }
             $displayData['Checkout page response'] = $adPage;
         }
@@ -79,9 +91,9 @@ class Info extends ConfigurableInfo
             
             $displayData['Refund Response'] = $refundResponse;
         }
+
         if ($this->getArea() != 'adminhtml') {
             return $transport->setData( ['Checkout page response:'=>$frontDisplayData]);
-            
         }
         return $transport->setData($displayData);
     }
