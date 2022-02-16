@@ -31,7 +31,6 @@ abstract class BaseOrderRequest implements BuilderInterface
         $order = $payment->getOrder();
         $address = $order->getShippingAddress();
         $quote = $this->session->getQuote();
-
         $orderDetails = [
             'currency_code' => $order->getCurrencyCode(),
             'more_info' => $order->getOrderIncrementId()
@@ -65,7 +64,21 @@ abstract class BaseOrderRequest implements BuilderInterface
         $currencyCodeTo = $storeManager->getStore()->getCurrentCurrency()->getCode();
         $currencyCodeFrom = $storeManager->getStore()->getBaseCurrency()->getCode();
         $rate = $priceCurrencyFactory->create()->load($currencyCodeTo)->getAnyRate($currencyCodeFrom);
-
+        $taxRateID = $quote->getCustomerTaxClassId();
+        $taxRate = null;
+        if ($taxRateID) {
+            $taxRateManager = $objectManager->get(\Magento\Tax\Model\Calculation\Rate::class);
+            if ($taxRateManager) {
+                $taxCalculation = $taxRateManager->load($taxRateID , 'tax_calculation_rate_id' );
+                if ($taxCalculation) {
+                    $taxRate = (float)$taxCalculation->getRate();
+                    if ($taxRate) {
+                        $taxRate = ($taxRate + 100) / 100;
+                    }
+                }
+            }
+        }
+        
         foreach ($order->getItems() as $item) {
             $itemAmount = $item->getPriceInclTax() * 100; // product price
             if ($currencyCodeTo !=  $currencyCodeFrom) {
@@ -86,11 +99,28 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $itemAmount =  $itemAmount * $rate;
             }
             $orderDetails['items'][] = [
-                'name'         => 'Shipping',
+                'name'         => __('Shipping'),
                 'price'         => $itemAmount,
                 'shipping'   => true,
             ];
         }
+
+       
+        $discount = $order->getBaseDiscountAmount();
+        if ($discount) {
+            if ($taxRate) {
+                $discount *=$taxRate;
+            }
+            if ($currencyCodeTo !=  $currencyCodeFrom) {
+                $discount =  $discount * $rate;
+            }
+            $orderDetails['items'][] = [
+                'name'         => __('Discount'),
+                'price'         => $discount,
+                'quantity'   => 1,
+            ];
+        }
+
         $totalItems = 0;
         foreach ($orderDetails['items'] as $item) {
             $quantity = ($item['quantity']) ?? 1;
@@ -104,14 +134,12 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'quantity'   => 1,
             ];
         }
-
         if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 1) {
             $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
             if ($appliedTaxes !== null && empty($appliedTaxes)) {
                 $orderDetails['paying_vat'] = false;
             }
         }
-
         return [
             'orderDetails' => $orderDetails,
             'meta' => []
