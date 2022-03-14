@@ -20,17 +20,12 @@ class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
     {
         $responseRequest = $this->resultFactory->create('json');
         $params = $this->request->getBodyParams();
-
         $response = $this->apiConnector->checkTransactionAgainstIPN([
             'transaction_uid' =>  $params['transaction']['uid'],
             'payment_request_uid' =>  $params['transaction']['payment_page_request_uid']
         ]);
 
-        if (!isset($response['data'])
-            || !isset($response['results'])
-            || $response['results']['status'] != 'success'
-        ) {
-
+        if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
             $responseRequest->setData(['status' => 'failure']);
             return $response;
         }

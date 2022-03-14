@@ -34,7 +34,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             'transaction_uid' => $params['transaction_uid'],
             'payment_request_uid' => $params['page_request_uid']
         ]);
-        if (!isset($response['data']) || !isset($response['results']) || $response['results']['status'] != 'success') {
+        if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
             $resultRedirect->setPath('checkout/onepage/failure');
             return $resultRedirect;
         }
