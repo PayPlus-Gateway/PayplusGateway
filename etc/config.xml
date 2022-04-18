@@ -45,11 +45,11 @@
                 </payment_page>
                 <invoices_config>
                     <invoice_language_same_as_terminal>1</invoice_language_same_as_terminal>
-                    <no_vat_if_set_to_no_vat>1</no_vat_if_set_to_no_vat>
+                    <no_vat_if_set_to_no_vat>0</no_vat_if_set_to_no_vat>
                 </invoices_config>
             </payplus_gateway>
             <payplus_cc_vault>
-                    <model>PayplusCreditCardVaultFacade</model>        
+                    <model>PayplusCreditCardVaultFacade</model>
                     <title>Stored Cards (Payplus)</title>
             </payplus_cc_vault>
         </payment>
