@@ -78,7 +78,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
             }
         }
-        
+
         foreach ($order->getItems() as $item) {
             $itemAmount = $item->getPriceInclTax() * 100; // product price
             if ($currencyCodeTo !=  $currencyCodeFrom) {
@@ -105,7 +105,7 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }
 
-       
+
         $discount = $order->getBaseDiscountAmount();
         if ($discount) {
             if ($taxRate) {
@@ -134,6 +134,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'quantity'   => 1,
             ];
         }
+        $orderDetails['paying_vat'] = true;
         if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 1) {
             $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
             if ($appliedTaxes !== null && empty($appliedTaxes)) {
