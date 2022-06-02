@@ -19,6 +19,7 @@
 
     <!-- ko if: (getIframeURL()) -->
     <iframe
+        allow="payment"
         data-bind="attr: { src: getIframeURL() },style:{height: window.checkoutConfig.payment.payplus_gateway.iframe_height+'px'}"
         id="payplus-payment-iframe"></iframe>
     <!--/ko-->
