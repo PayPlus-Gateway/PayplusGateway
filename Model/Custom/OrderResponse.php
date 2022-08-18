@@ -23,6 +23,7 @@ class OrderResponse
 
         $payment = $this->order->getPayment();
         $status = false;
+
         if (!$direct) {
             if ($payment->getData('additional_data') != $params['page_request_uid']) {
                 return $status;
@@ -46,15 +47,17 @@ class OrderResponse
                 $this->order->setState('pending_payment');
                 $this->order->setStatus('pending');
             }
-            
+
             if ($params['type'] =='Charge') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE;
                 $payment->registerCaptureNotification($params['amount']);
+
+
             }
 
             $status = true;
         }
-        
+
         $payment->setCcStatus($params['status_code']);
         $payment->setCcLast4($params['four_digits']);
         $payment->setTransactionId($params['transaction_uid']);
@@ -63,7 +66,7 @@ class OrderResponse
         $payment->setCcExpMonth($params['expiry_month']);
         $payment->setCcExpYear($params['expiry_year']);
         $paymentAdditionalInformation = ['paymentPageResponse'=>$params];
-        
+
         if (isset($params['token_uid'])
             && $params['token_uid']
             && $this->order->getCustomerId()
@@ -79,7 +82,7 @@ class OrderResponse
             $paymentToken->setGatewayToken($params['token_uid']);
             $paymentToken->setExpiresAt($expiryDate->format('Y-m-01 00:00:00'));
             $paymentToken->setPaymentMethodCode(ConfigProvider::CC_VAULT_CODE);
-            
+
             $paymentToken->setTokenDetails(json_encode([
                 'type' => $params['brand_name'],
                 'maskedCC' => $params['four_digits'],

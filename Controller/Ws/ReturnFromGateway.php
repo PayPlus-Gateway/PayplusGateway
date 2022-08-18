@@ -1,7 +1,7 @@
 <?php
 
 namespace Payplus\PayplusGateway\Controller\Ws;
-
+use Magento\Sales\Model\Order;
 class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiController
 {
     /**
@@ -34,10 +34,12 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             'transaction_uid' => $params['transaction_uid'],
             'payment_request_uid' => $params['page_request_uid']
         ]);
+
         if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
             $resultRedirect->setPath('checkout/onepage/failure');
             return $resultRedirect;
         }
+
         $params = $response['data'];
 
         if ($this->config->getValue(
@@ -55,9 +57,20 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class)->truncate();
         $cartObject->saveQuote();
+
         if ($response['results']['status'] != 'success' || $status === false) {
             $resultRedirect->setPath('checkout/onepage/failure');
         } else {
+            $type =$response['data']['type'];
+
+
+            if($type=="Charge"){
+                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+                $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
+                $orderState = Order::STATE_COMPLETE;
+               $order->setState($orderState)->setStatus("complete");
+               $order->save();
+            }
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;

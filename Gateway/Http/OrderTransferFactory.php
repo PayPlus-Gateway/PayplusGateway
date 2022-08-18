@@ -29,7 +29,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         $this->_logger= $logger;
         parent::__construct($config);
     }
-    
+
     public function create(array $data)
     {
         $request = $data['orderDetails'];
@@ -76,7 +76,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
                 ->config
                 ->getValue('payment/payplus_gateway/payment_page/cancel_page_custom_url', $scp);
         }
-        
+
         if ($this->config->getValue('payment/payplus_gateway/payment_page/hide_id_card_number', $scp)) {
             $request['hide_identification_id'] = true;
         }
@@ -96,12 +96,17 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         }
         $localeLetter = $this->_store->getLocale();
         $request['language_code'] = substr($localeLetter, 0, 2);
-        
+
+
+
         if ($this
             ->config
             ->getValue('payment/payplus_gateway/invoices_config/invoice_language_same_as_terminal', $scp)
             ) {
+
             $request['invoice_language'] = substr($localeLetter, 0, 2);
+
+
         }
 
         $transfer = $this->transferBuilder

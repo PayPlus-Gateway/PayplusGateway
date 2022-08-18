@@ -54,6 +54,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         }
 
         if (!empty($customer)) {
+
             $orderDetails['customer'] = $customer;
         }
 
@@ -135,12 +136,16 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }
         $orderDetails['paying_vat'] = true;
-        if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 1) {
-            $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
+
+        //roee 27-06-2022
+        if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 0) {
+           $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
+
             if ($appliedTaxes !== null && empty($appliedTaxes)) {
                 $orderDetails['paying_vat'] = false;
             }
         }
+
         return [
             'orderDetails' => $orderDetails,
             'meta' => []

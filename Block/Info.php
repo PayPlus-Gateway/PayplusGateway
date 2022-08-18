@@ -52,6 +52,22 @@ class Info extends ConfigurableInfo
                 $adPage['First payment'] = $pageData['first_payment_amount'];
                 $adPage['Subsequent payments'] = $pageData['rest_payments_amount'];
             }
+            if (isset($additionalInformation['paymentPageResponse']['token'])) {
+                $adPage['Token'] = $pageData['token'];
+            }
+
+            if (isset($additionalInformation['paymentPageResponse']['voucher_num'])) {
+                $adPage['Voucher number'] = $pageData['voucher_num'];
+            }
+            
+            if (isset($additionalInformation['paymentPageResponse']['more_info'])) {
+                $adPage['More info'] = $pageData['more_info'];
+            }
+            
+            if (isset($additionalInformation['paymentPageResponse']['alternative_name'])) {
+                $adPage['Alternative name'] = $pageData['alternative_name'];
+            }
+
             if (isset($additionalInformation['paymentPageResponse']['identification_number'])) {
                 $adPage['Identification card number'] = $pageData['identification_number'];
             }
