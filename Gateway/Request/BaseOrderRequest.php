@@ -137,7 +137,6 @@ abstract class BaseOrderRequest implements BuilderInterface
         }
         $orderDetails['paying_vat'] = true;
 
-        //roee 27-06-2022
         if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 0) {
            $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
 
