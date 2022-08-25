@@ -32,7 +32,7 @@ class Info extends ConfigurableInfo
          * @var \Magento\Sales\Model\Order\Payment\Interceptor
          */
         $info = $this->getInfo();
-        
+
         $displayData = [];
         $frontDisplayData = [];
 
@@ -43,7 +43,7 @@ class Info extends ConfigurableInfo
 
             $textCapturedReturn =  ($pageData['type'] == 'Approval') ? 'authorized':'charged';
             $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
-            
+
             $frontDisplayData['Status description'] = $adPage['Status description'] = $pageData['status_description'];
             $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
             if (isset($additionalInformation['paymentPageResponse']['number_of_payments'])
@@ -52,18 +52,18 @@ class Info extends ConfigurableInfo
                 $adPage['First payment'] = $pageData['first_payment_amount'];
                 $adPage['Subsequent payments'] = $pageData['rest_payments_amount'];
             }
-            if (isset($additionalInformation['paymentPageResponse']['token'])) {
-                $adPage['Token'] = $pageData['token'];
+            if (isset($additionalInformation['paymentPageResponse']['token_uid'])) {
+                $adPage['Token'] = $pageData['token_uid'];
             }
 
             if (isset($additionalInformation['paymentPageResponse']['voucher_num'])) {
                 $adPage['Voucher number'] = $pageData['voucher_num'];
             }
-            
-            if (isset($additionalInformation['paymentPageResponse']['more_info'])) {
+
+            if (isset($additionalInformation['paymentPageResponse']['c'])) {
                 $adPage['More info'] = $pageData['more_info'];
             }
-            
+
             if (isset($additionalInformation['paymentPageResponse']['alternative_name'])) {
                 $adPage['Alternative name'] = $pageData['alternative_name'];
             }
@@ -104,7 +104,7 @@ class Info extends ConfigurableInfo
             $refundResponse['Status description'] =  $additionalRefund['results']['description'];
             $amountShrt = $additionalRefund['data']['transaction']['amount'];
             $refundResponse['Amount refunded'] = $priceHelper->currency($amountShrt, true, false, 'USD');
-            
+
             $displayData['Refund Response'] = $refundResponse;
         }
 

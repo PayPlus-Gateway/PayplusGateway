@@ -32,6 +32,8 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
 
     public function create(array $data)
     {
+
+
         $request = $data['orderDetails'];
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
         $getStoreURL = $this->storeManager->getStore()->getBaseUrl();
@@ -39,6 +41,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             'payment/payplus_gateway/api_configuration/payment_page_uid',
             $scp
         );
+
         $request['refURL_success'] = $getStoreURL.'payplus_gateway/ws/returnfromgateway';
         $request['refURL_failure'] = $getStoreURL.'checkout/onepage/failure';
         $request['refURL_cancel'] = $getStoreURL.'checkout/#payment';
@@ -89,14 +92,15 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         if ($this->config->getValue('payment/payplus_gateway/orders_config/sendEmailFailure', $scp)) {
             $request['sendEmailFailure'] = true;
         }
-        if ($this->config->getValue('payment/payplus_cc_vault/active', $scp)
-            && $data['meta']['create_token']
+
+        if (($this->config->getValue('payment/payplus_cc_vault/active', $scp)
+            && $data['meta']['create_token'] )|| $this->config->getValue('payment/payplus_enable_cc_vault_always/active', $scp)
             ) {
             $request['create_token'] = true;
         }
+
         $localeLetter = $this->_store->getLocale();
         $request['language_code'] = substr($localeLetter, 0, 2);
-
 
 
         if ($this
@@ -113,6 +117,7 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             ->setBody($request)
             ->setUri($this->gatewayMethod)
             ->build();
+
         $this->_logger->debugOrder("Order request", $request);
         return $transfer;
     }

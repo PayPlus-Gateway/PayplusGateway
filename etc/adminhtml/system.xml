@@ -41,6 +41,11 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <config_path>payment/payplus_cc_vault/active</config_path>
                     </field>
+                    <field id="enable_cc_vault_always" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Always enable credit card vault storage</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <config_path>payment/payplus_enable_cc_vault_always/active</config_path>
+                    </field>
                 </group>
                 <group id="display_settings" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
