@@ -69,6 +69,8 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                 $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
                 $orderState = Order::STATE_COMPLETE;
                $order->setState($orderState)->setStatus("complete");
+               $order->addStatusHistoryComment("complete order id :" .$params['more_info']);
+
                $order->save();
             }
             $resultRedirect->setPath('checkout/onepage/success');
