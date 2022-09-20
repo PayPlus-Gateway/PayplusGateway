@@ -28,6 +28,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         /**
          * @var \Magento\Framework\Controller\Result\Redirect\Interceptor
          */
+
         $resultRedirect = $this->resultFactory->create('redirect');
         $params = $this->request->getParams();
         $response = $this->apiConnector->checkTransactionAgainstIPN([
@@ -62,17 +63,20 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             $resultRedirect->setPath('checkout/onepage/failure');
         } else {
             $type =$response['data']['type'];
-
-
             if($type=="Charge"){
+                $orderOrder=$this->config->getValue(
+                    'payment/payplus_gateway/api_configuration/status_order_payplus',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                if(empty($orderOrder)){
+                    $orderOrder = Order::STATE_COMPLETE;
+                }
                 $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
                 $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
-                $orderState = Order::STATE_COMPLETE;
-               $order->setState($orderState)->setStatus("complete");
-               $order->addStatusHistoryComment("complete order id :" .$params['more_info']);
-
+               $order->setState($orderOrder)->setStatus($orderOrder);
+               $order->addStatusHistoryComment($orderOrder." order id :" .$params['more_info']);
                $order->save();
             }
+
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;
