@@ -31,6 +31,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         $order = $payment->getOrder();
         $address = $order->getShippingAddress();
         $quote = $this->session->getQuote();
+
         $orderDetails = [
             'currency_code' => $order->getCurrencyCode(),
             'more_info' => $order->getOrderIncrementId()
@@ -38,9 +39,15 @@ abstract class BaseOrderRequest implements BuilderInterface
         $customer = [];
         if ($quote && $address) {
             if (method_exists($address, 'getFirstName')) {
+              ;
                 $customer['email'] = $quote->getCustomerEmail();
-                $customer['customer_name'] = $address->getFirstName() . ' ' . $address->getLastName();
+                $customer_name =$address->getFirstName() . ' ' . $address->getLastName();
+                if(!empty($address->getCompany())){
+                    $customer_name.=" (" .$address->getCompany()." ) ";
+                }
+                $customer['customer_name'] =  $customer_name;
                 $customer['city'] = $address->getCity();
+
                 $customer['country_iso'] = $address->getCountryId();
                 if (method_exists($address, 'getStreet')) {
                     $addressLines = $address->getStreet();
@@ -52,6 +59,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
             }
         }
+   ;
 
         if (!empty($customer)) {
 
