@@ -88,16 +88,25 @@ abstract class BaseOrderRequest implements BuilderInterface
             }
         }
 
+
+
         foreach ($order->getItems() as $item) {
             $itemAmount = $item->getPriceInclTax() * 100; // product price
             if ($currencyCodeTo !=  $currencyCodeFrom) {
                 $itemAmount = $itemAmount * $rate;
+            }
+            // Tax
+            if($item->getTaxAmount()){
+                $vat_type =0;
+            }else{
+                $vat_type =2;
             }
             $orderDetails['items'][] = [
                 'name'          => $item->getName(),
                 'price'         => floor($itemAmount) / 100,
                 'quantity'   => $item->getQtyOrdered(),
                 'barcode'   => $item->getSku(),
+                'vat_type'=>$vat_type  // Tax
             ];
         }
 
