@@ -4,6 +4,7 @@ namespace Payplus\PayplusGateway\Gateway\Request;
 
 use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
+define('ROUNDING_DECIMALS',2);
 
 abstract class BaseOrderRequest implements BuilderInterface
 {
@@ -20,6 +21,7 @@ abstract class BaseOrderRequest implements BuilderInterface
 
     protected function collectCartData(array $buildSubject)
     {
+        $totalItems = 0;
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
         if (!isset($buildSubject['payment'])
             || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
@@ -31,8 +33,10 @@ abstract class BaseOrderRequest implements BuilderInterface
         $order = $payment->getOrder();
         $address = $order->getShippingAddress();
         $quote = $this->session->getQuote();
+        $paymentMethod = $quote->getPayment()->getMethodInstance()->getCode();
 
         $orderDetails = [
+            'method' =>$paymentMethod,
             'currency_code' => $order->getCurrencyCode(),
             'more_info' => $order->getOrderIncrementId()
         ];
@@ -91,10 +95,17 @@ abstract class BaseOrderRequest implements BuilderInterface
 
 
         foreach ($order->getItems() as $item) {
+
             $itemAmount = $item->getPriceInclTax() * 100; // product price
+
             if ($currencyCodeTo !=  $currencyCodeFrom) {
                 $itemAmount = $itemAmount * $rate;
             }
+
+            $price =$itemAmount /100;
+            $price =    round($price, ROUNDING_DECIMALS);
+            $totalItems+=($price * $item->getQtyOrdered());
+
             // Tax
             if($item->getTaxAmount()){
                 $vat_type =0;
@@ -103,26 +114,29 @@ abstract class BaseOrderRequest implements BuilderInterface
             }
             $orderDetails['items'][] = [
                 'name'          => $item->getName(),
-                'price'         => floor($itemAmount) / 100,
+                'price'         => $price,
                 'quantity'   => $item->getQtyOrdered(),
                 'barcode'   => $item->getSku(),
                 'vat_type'=>$vat_type  // Tax
             ];
         }
 
+
         $shippingAmount  = $payment->getPayment()->getBaseShippingAmount();
+
         if ($shippingAmount) {
             $itemAmount = $quote->getShippingAddress()->getShippingInclTax();
             if ($currencyCodeTo !=  $currencyCodeFrom) {
                 $itemAmount =  $itemAmount * $rate;
             }
+            $price =    round($itemAmount, ROUNDING_DECIMALS);
+            $totalItems+=$price;
             $orderDetails['items'][] = [
                 'name'         => __('Shipping'),
-                'price'         => $itemAmount,
+                'price'         => $price,
                 'shipping'   => true,
             ];
         }
-
 
         $discount = $order->getBaseDiscountAmount();
         if ($discount) {
@@ -132,6 +146,8 @@ abstract class BaseOrderRequest implements BuilderInterface
             if ($currencyCodeTo !=  $currencyCodeFrom) {
                 $discount =  $discount * $rate;
             }
+            $discount = round($discount, ROUNDING_DECIMALS);
+            $totalItems+=$discount;
             $orderDetails['items'][] = [
                 'name'         => __('Discount'),
                 'price'         => $discount,
@@ -139,13 +155,15 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }
 
-        $totalItems = 0;
+     /*   $totalItems = 0;
         foreach ($orderDetails['items'] as $item) {
             $quantity = ($item['quantity']) ?? 1;
             $totalItems += ($item['price'] * $quantity);
-        }
+        }*/
         $orderDetails['amount'] = $order->getGrandTotalAmount();
-        if ($orderDetails['amount'] != $totalItems) {
+
+        if ($orderDetails['amount']!== $totalItems) {
+
             $orderDetails['items'][] = [
                 'name'         => __('Currency conversion rounding'),
                 'price'         => $orderDetails['amount'] - $totalItems,
