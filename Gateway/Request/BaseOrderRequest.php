@@ -2,6 +2,7 @@
 
 namespace Payplus\PayplusGateway\Gateway\Request;
 
+use Magento\Framework\Event\Observer;
 use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 define('ROUNDING_DECIMALS',2);
@@ -22,6 +23,8 @@ abstract class BaseOrderRequest implements BuilderInterface
     protected function collectCartData(array $buildSubject)
     {
         $totalItems = 0;
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
         if (!isset($buildSubject['payment'])
             || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
@@ -36,10 +39,16 @@ abstract class BaseOrderRequest implements BuilderInterface
         $paymentMethod = $quote->getPayment()->getMethodInstance()->getCode();
 
         $orderDetails = [
-            'method' =>$paymentMethod,
+            'charge_default' =>$this->customerSession->getPayplusMethodReq(),
             'currency_code' => $order->getCurrencyCode(),
             'more_info' => $order->getOrderIncrementId()
         ];
+
+        if( intval(  $config->getValue(
+            'payment/payplus_gateway_'.$this->customerSession->getPayplusMethodReq().'/payment_page/hide_other_paymnet',
+            $scp))){
+            $orderDetails['hide_other_charge_methods']=true;
+        }
         $customer = [];
         if ($quote && $address) {
             if (method_exists($address, 'getFirstName')) {
@@ -70,8 +79,7 @@ abstract class BaseOrderRequest implements BuilderInterface
             $orderDetails['customer'] = $customer;
         }
 
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+
         $priceCurrencyFactory = $objectManager->get(\Magento\Directory\Model\CurrencyFactory::class);
         $storeManager = $objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
         $currencyCodeTo = $storeManager->getStore()->getCurrentCurrency()->getCode();

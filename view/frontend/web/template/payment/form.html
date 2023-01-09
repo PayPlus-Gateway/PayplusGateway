@@ -3,25 +3,92 @@
  * Copyright © 2016 Magento. All rights reserved.
  * See COPYING.txt for license details.
  */
+ /* checked: isChecked*/
 -->
 <div class="payment-method" data-bind="css: {'_active': (getCode() == isChecked())}">
+
     <div class="payment-method-title field choice">
-        <input type="radio" name="payment[method]" class="radio"
-            data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()" />
-        <label class="label" data-bind="attr: {'for': getCode()}">
-            <!-- ko if :(bShowPayplusLogo() == false) -->
-            <img id="payplus-logo-image___x"
-                data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/payplus-logo.png') }" />
+        <input payplus-data-method="credit-card" type="radio" name="payment[method]" class="radio payplus-select-method"
+            data-bind="attr: {'id': getCode()+'credit-card'}, value: getCode()+'credit-card',  click: selectPaymentMethod, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()+'credit-card'}">
+            <!-- ko if :(bShowPayplusLogo('payplus_gateway') == false) -->
+            <img class="payplus-logo-image"
+                data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/payplus.svg') }" />
             <!-- /ko -->
-            <span data-bind="text: getTitle()"></span>
+            <span data-bind="text: getTitle('payplus_gateway')"></span>
         </label>
     </div>
+    <!-- ko if :(getActive('bit')==1) -->
+    <div class="payment-method-title field choice">
+        <input payplus-data-method="bit" type="radio" name="payment[method]" class="radio payplus-select-method"
+               data-bind="attr: {'id': getCode()+'bit'}, value: getCode()+'bit', click: selectPaymentMethod, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()+'bit'}">
+            <!-- ko if :(bShowPayplusLogo('bit') == false) -->
+            <img class="payplus-logo-image"
+                 data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/bit.svg') }" />
+            <!-- /ko -->
+            <span data-bind="text: getTitle('bit')"></span>
+        </label>
+    </div>
+    <!-- /ko -->
+    <!-- ko if :(getActive('google-pay')==1) -->
+    <div class="payment-method-title field choice">
+        <input payplus-data-method="google-pay" type="radio" name="payment[method]" class="radio payplus-select-method"
+               data-bind="attr: {'id': getCode()+'google-pay'}, value: getCode()+'google-pay', click: selectPaymentMethod, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()+'google-pay'}">
+            <!-- ko if :(bShowPayplusLogo('google-pay') == false) -->
+            <img class="payplus-logo-image"
+                 data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/google-pay.svg') }" />
+            <!-- /ko -->
+            <span data-bind="text: getTitle('google-pay')"></span>
+        </label>
+    </div>
+    <!-- /ko -->
+    <!-- ko if :(getActive('apple-pay')==1) -->
+    <div class="payment-method-title field choice">
+        <input payplus-data-method="apple-pay" type="radio" name="payment[method]" class="radio payplus-select-method"
+               data-bind="attr: {'id': getCode()+'apple-pay'}, value: getCode()+'apple-pay', click: selectPaymentMethod, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()+'apple-pay'}">
+            <!-- ko if :(bShowPayplusLogo('apple-pay') == false) -->
+            <img class="payplus-logo-image"
+                 data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/apple-pay.svg') }" />
+            <!-- /ko -->
+            <span data-bind="text: getTitle('apple-pay')"></span>
+        </label>
+    </div>
+    <!-- /ko -->
+    <!-- ko if :(getActive('multipass')==1) -->
+    <div class="payment-method-title field choice">
+        <input payplus-data-method="multipass" type="radio" name="payment[method]" class="radio payplus-select-method"
+               data-bind="attr: {'id': getCode()+'multipass'}, value: getCode()+'multipass', click: selectPaymentMethod, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()+'multipass'}">
+            <!-- ko if :(bShowPayplusLogo('multipass') == false) -->
+            <img class="payplus-logo-image"
+                 data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/multipass.svg') }" />
+            <!-- /ko -->
+            <span data-bind="text: getTitle('multipass')"></span>
 
+        </label>
+    </div>
+    <!-- /ko -->
+    <!-- ko if :(getActive('paypal')==1) -->
+    <div class="payment-method-title field choice">
+        <input payplus-data-method="paypal" type="radio" name="payment[method]" class="radio payplus-select-method"
+               data-bind="attr: {'id': getCode()+'paypal'}, value: getCode()+'paypal', click: selectPaymentMethod, visible: isRadioButtonVisible()" />
+        <label class="label" data-bind="attr: {'for': getCode()+'paypal'}">
+            <!-- ko if :(bShowPayplusLogo('paypal') == false) -->
+            <img class="payplus-logo-image"
+                 data-bind="attr: { src: require.toUrl('Payplus_PayplusGateway/images/paypal.svg') }" />
+            <!-- /ko -->
+            <span data-bind="text: getTitle('paypal')"></span>
+        </label>
+    </div>
+    <!-- /ko -->
     <!-- ko if: (getIframeURL()) -->
     <iframe
         allowpaymentrequest
         data-bind="attr: {  src: getIframeURL() },style:{height: window.checkoutConfig.payment.payplus_gateway.iframe_height+'px'}"
-        id="payplus-payment-iframe"></iframe>
+        id="pp-iframe"></iframe>
     <!--/ko-->
     <!-- ko ifnot: (getIframeURL()) -->
     <div class="payment-method-content">
@@ -35,6 +102,17 @@
             <!-- /ko -->
             <!--/ko-->
         </div>
+        <!--<form id="purchaseorder-form" class="form form-purchase-order" data-role="purchaseorder-form">
+            <fieldset class="fieldset payment method" data-bind='attr: {id: "payment_form_" + getCode()}'>
+                <div class="field field-number required">
+                    <div class="control">
+                        <div class="name-info">
+                            <input type="text" id="purchaseorder_payplus_method_req" name="payment[payplus_method_req]" class="input-text" placeholder="Purchase Order Comment" value="" data-bind="attr: {title: $t('Purchase Order Comment'),'data-container': getCode() + '-payplus_method_req'},valueUpdate: 'keyup'"/>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </form>-->
         <div class="checkout-agreements-block">
             <!-- ko foreach: $parent.getRegion('before-place-order') -->
             <!-- ko template: getTemplate() --><!-- /ko -->

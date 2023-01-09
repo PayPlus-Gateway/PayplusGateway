@@ -24,9 +24,18 @@ class ConfigProvider implements ConfigProviderInterface
     public function getConfig()
     {
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
+
         return [
             'payment' => [
                 self::CODE => [
+                     'title'=> $this->config->getValue(
+                         'payment/payplus_gateway/title',
+                         $scp
+                     ),
+                    'active'=> $this->config->getValue(
+                        'payment/payplus_gateway/active',
+                        $scp
+                    ),
                     'ccVaultCode' => self::CC_VAULT_CODE,
                     'bHidePayplusLogo'=>(bool)$this->config->getValue(
                         'payment/payplus_gateway/payment_page/hide_payplus_icon',
@@ -41,8 +50,86 @@ class ConfigProvider implements ConfigProviderInterface
                         $scp
                     ),
                     'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
+                ],
+                'google-pay' => [
+                    'title'=> $this->config->getValue(
+                        'payment/payplus_gateway_google-pay/title',
+                        $scp
+                    ),
+                    'active'=> $this->config->getValue(
+                        'payment/payplus_gateway_google-pay/active',
+                        $scp
+                    ),
+                    'bHidePayplusLogo'=>(bool)$this->config->getValue(
+                        'payment/payplus_gateway_google-pay/payment_page/hide_payplus_icon',
+                        $scp
+                    ),
+                    'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
+                ],
+                'bit' => [
+                    'title'=> $this->config->getValue(
+                        'payment/payplus_gateway_bit/title',
+                        $scp
+                    ),
+                    'active'=> $this->config->getValue(
+                        'payment/payplus_gateway_bit/active',
+                        $scp
+                    ),
+                    'bHidePayplusLogo'=>(bool)$this->config->getValue(
+                        'payment/payplus_gateway_bit/payment_page/hide_payplus_icon',
+                        $scp
+                    ),
+                    'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
+                ],
+                'multipass' => [
+            'title'=> $this->config->getValue(
+                'payment/payplus_gateway_multipass/title',
+                $scp
+            ),
+            'active'=> $this->config->getValue(
+                'payment/payplus_gateway_multipass/active',
+                $scp
+            ),
+            'bHidePayplusLogo'=>(bool)$this->config->getValue(
+                'payment/payplus_gateway_multipass/payment_page/hide_payplus_icon',
+                $scp
+            ),
+            'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
+    ],
+                'paypal' => [
+                    'title'=> $this->config->getValue(
+                        'payment/payplus_gateway_paypal/title',
+                        $scp
+                    ),
+                    'active'=> $this->config->getValue(
+                        'payment/payplus_gateway_paypal/active',
+                        $scp
+                    ),
+                    'bHidePayplusLogo'=>(bool)$this->config->getValue(
+                        'payment/payplus_gateway_paypal/payment_page/hide_payplus_icon',
+                        $scp
+                    ),
+                    'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
+                ],
+                'apple-pay' => [
+                    'title'=> $this->config->getValue(
+                        'payment/payplus_gateway_apple-pay/title',
+                        $scp
+                    ),
+                    'active'=> $this->config->getValue(
+                        'payment/payplus_gateway_apple-pay/active',
+                        $scp
+                    ),
+                    'bHidePayplusLogo'=>(bool)$this->config->getValue(
+                        'payment/payplus_gateway_apple-pay/payment_page/hide_payplus_icon',
+                        $scp
+                    ),
+                    'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
                 ]
+
+
             ]
+
         ];
     }
 }

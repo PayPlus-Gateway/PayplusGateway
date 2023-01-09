@@ -1,9 +1,8 @@
-#payplus-payment-iframe {
+#pp-iframe {
     width:100%;
     border:none;
 }
 
-#payplus-logo-image___x{
-    width: 50px;
+.payplus-logo-image{
     vertical-align: middle;
 }

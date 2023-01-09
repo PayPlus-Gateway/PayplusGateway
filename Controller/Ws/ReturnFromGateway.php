@@ -44,6 +44,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         $params = $response['data'];
 
 
+
         if ($this->config->getValue(
             'payment/payplus_gateway/payment_page/use_callback',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
@@ -70,21 +71,40 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                     'payment/payplus_gateway/api_configuration/status_order_payplus',
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
-                if(!empty($statusOrderPayplus)){
-                    $statusOrderPayplus =Order::STATE_COMPLETE;
+                if($statusOrderPayplus){
+                    $this->updateStatusByOrderId($params['more_info'],$statusOrderPayplus);
+                    $order->addStatusHistoryComment($statusOrderPayplus." order id :" .$params['more_info']);
+                }else{
+                    $statusOrder = Order::STATE_COMPLETE;
+                    $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
+                    $order->setState($statusOrder)->setStatus('complete');
+                    $order->save();
                 }
-                $statusOrder = Order::STATE_COMPLETE;
 
-                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-                $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
-               $order->setState($statusOrder)->setStatus('complete');
-               $order->addStatusHistoryComment($statusOrderPayplus." order id :" .$params['more_info']);
-               $order->save();
+
 
             }
-
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;
+    }
+    public function updateStatusByOrderId($orderId,$status){
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance(); // Instance of object manager
+        $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+        $connection = $resource->getConnection();
+        $tableName = $resource->getTableName('sales_order');
+
+        if(!empty($tableName)){
+            $query = "SELECT  * FROM " . $tableName  ." WHERE increment_id=".$orderId;
+            $result=$connection->query($query);
+
+            if(count($result->fetchAll())){
+                $query = "UPDATE   " . $tableName  ." SET state='".$status."' ,
+                status='".$status."' WHERE increment_id=".$orderId;
+                $result=$connection->query($query);
+
+            }
+
+        }
     }
 }

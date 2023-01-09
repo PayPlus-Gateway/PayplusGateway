@@ -70,8 +70,18 @@ define(
                 return window.checkoutConfig.payment[this.getCode()].ccVaultCode;
             },
 
-            bShowPayplusLogo: () => {
-                return window.checkoutConfig.payment.payplus_gateway.bHidePayplusLogo;
+            bShowPayplusLogo: (method) => {
+                let bHidePayplusLogo =window.checkoutConfig.payment[method].bHidePayplusLogo
+                return bHidePayplusLogo;
+            },
+            getActive:function (method){
+
+                let active =window.checkoutConfig.payment[method].active
+                return active;
+            },
+            getTitle:function (method){
+                let title =window.checkoutConfig.payment[method].title
+                return title;
             },
 
             getCode: function () {
@@ -79,16 +89,18 @@ define(
             },
 
             getData: function () {
+                let payplusDataMethod = $('.payplus-select-method:checked').attr("payplus-data-method");
                 var data = {
                     'method': this.item.method,
                     'additional_data': {
-                        'transaction_result': this.transactionResult()
+                        'transaction_result': this.transactionResult(),
+                        'payplusmethodreq': payplusDataMethod,
                     }
                 };
-    
+
                 data['additional_data'] = _.extend(data['additional_data'], this.additionalData);
                 this.vaultEnabler.visitAdditionalData(data);
-    
+
                 return data;
             },
 
@@ -127,6 +139,7 @@ define(
 
 
             afterPlaceOrder: function (Response) {
+                console.log(Response);
                 if (isNaN(Response)) {
                     alert('Error processing your request');
                     return false;
