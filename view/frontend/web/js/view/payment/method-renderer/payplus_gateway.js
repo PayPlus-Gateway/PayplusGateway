@@ -139,7 +139,7 @@ define(
 
 
             afterPlaceOrder: function (Response) {
-                console.log(Response);
+
                 if (isNaN(Response)) {
                     alert('Error processing your request');
                     return false;
