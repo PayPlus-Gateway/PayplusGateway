@@ -34,7 +34,9 @@ class DataAssignObserver extends AbstractDataAssignObserver
 
 
         if(!empty($payplusmethodreq['payplusmethodreq'])){
-            $this->customerSession->setPayplusMethodReq($payplusmethodreq['payplusmethodreq']);
+            $payplusmethodreq =str_replace('_','-',$payplusmethodreq['payplusmethodreq']);
+
+            $this->customerSession->setPayplusMethodReq($payplusmethodreq);
         }
 
         if ($data->getDataByKey('transaction_result') !== null) {

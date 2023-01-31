@@ -43,6 +43,12 @@ abstract class BaseOrderRequest implements BuilderInterface
             'currency_code' => $order->getCurrencyCode(),
             'more_info' => $order->getOrderIncrementId()
         ];
+        if ($config->getValue('payment/payplus_gateway/orders_config/payment_action', $scp) > 0) {
+            $orderDetails['charge_method'] = $config->getValue(
+                'payment/payplus_gateway/orders_config/payment_action',
+                $scp
+            );
+        }
 
         if( intval(  $config->getValue(
             'payment/payplus_gateway_'.$this->customerSession->getPayplusMethodReq().'/payment_page/hide_other_paymnet',

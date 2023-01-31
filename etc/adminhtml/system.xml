@@ -208,7 +208,7 @@
                 </group>
 
             </group>
-            <group id="payplus_gateway_google-pay" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="payplus_gateway_google_pay" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>PayPlus - Payment Gateway Google Pay</label>
                 <field id="title" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Title</label>
@@ -247,7 +247,7 @@
                 </group>
 
             </group>
-            <group id="payplus_gateway_apple-pay" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="payplus_gateway_apple_pay" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>PayPlus - Payment Gateway Apple Pay</label>
                 <field id="title" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Title</label>

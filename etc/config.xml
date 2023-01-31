@@ -9,7 +9,7 @@
                 <merchant_gateway_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
                 <order_status>pending_payment</order_status>
                 <payment_action>order</payment_action>
-                <version>1.0.35</version>
+                <version>1.0.36</version>
                 <title>Pay with credit or debit card using PayPlus</title>
                 <currency>ILS</currency>
                 <can_order_vault>1</can_order_vault>
@@ -61,7 +61,7 @@
                     <hide_other_paymnet>0</hide_other_paymnet>
                 </payment_page>
             </payplus_gateway_bit>
-            <payplus_gateway_google-pay>
+            <payplus_gateway_google_pay>
                 <active>0</active>
                 <title>Pay with Google Pay via PayPlus</title>
                 <display_settings>
@@ -72,8 +72,8 @@
                     <hide_payplus_icon>0</hide_payplus_icon>
                     <hide_other_paymnet>0</hide_other_paymnet>
                 </payment_page>
-            </payplus_gateway_google-pay>
-            <payplus_gateway_apple-pay>
+            </payplus_gateway_google_pay>
+            <payplus_gateway_apple_pay>
                 <active>0</active>
                 <title>Pay with Apple Pay via PayPlus</title>
                 <display_settings>
@@ -84,7 +84,7 @@
                     <hide_payplus_icon>0</hide_payplus_icon>
                     <hide_other_paymnet>0</hide_other_paymnet>
                 </payment_page>
-            </payplus_gateway_apple-pay>
+            </payplus_gateway_apple_pay>
             <payplus_gateway_multipass>
                 <active>0</active>
                 <title> Pay With MULTIPASS via PayPlus </title>

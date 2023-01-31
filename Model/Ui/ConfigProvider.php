@@ -51,17 +51,17 @@ class ConfigProvider implements ConfigProviderInterface
                     ),
                     'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
                 ],
-                'google-pay' => [
+                'google_pay' => [
                     'title'=> $this->config->getValue(
-                        'payment/payplus_gateway_google-pay/title',
+                        'payment/payplus_gateway_google_pay/title',
                         $scp
                     ),
                     'active'=> $this->config->getValue(
-                        'payment/payplus_gateway_google-pay/active',
+                        'payment/payplus_gateway_google_pay/active',
                         $scp
                     ),
                     'bHidePayplusLogo'=>(bool)$this->config->getValue(
-                        'payment/payplus_gateway_google-pay/payment_page/hide_payplus_icon',
+                        'payment/payplus_gateway_google_pay/payment_page/hide_payplus_icon',
                         $scp
                     ),
                     'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
@@ -111,17 +111,17 @@ class ConfigProvider implements ConfigProviderInterface
                     ),
                     'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
                 ],
-                'apple-pay' => [
+                'apple_pay' => [
                     'title'=> $this->config->getValue(
-                        'payment/payplus_gateway_apple-pay/title',
+                        'payment/payplus_gateway_apple_pay/title',
                         $scp
                     ),
                     'active'=> $this->config->getValue(
-                        'payment/payplus_gateway_apple-pay/active',
+                        'payment/payplus_gateway_apple_pay/active',
                         $scp
                     ),
                     'bHidePayplusLogo'=>(bool)$this->config->getValue(
-                        'payment/payplus_gateway_apple-pay/payment_page/hide_payplus_icon',
+                        'payment/payplus_gateway_apple_pay/payment_page/hide_payplus_icon',
                         $scp
                     ),
                     'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
