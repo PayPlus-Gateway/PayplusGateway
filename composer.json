@@ -1,9 +1,9 @@
 {
     "name": "payplus-payment/payplus-gateway",
     "description": "Payplus integration for Magento 2",
-    "version": "1.0.36",
+    "version": "1.0.37",
     "require": {
-        "php": "~7.4.0",
+        "php": "^7.4.0",
         "magento/module-sales": ">=100.0",
         "magento/module-checkout": ">=100.0",
         "magento/module-payment": ">=100.0",
