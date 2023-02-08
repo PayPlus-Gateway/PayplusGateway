@@ -1,7 +1,7 @@
 {
     "name": "payplus-payment/payplus-gateway",
     "description": "Payplus integration for Magento 2",
-    "version": "1.0.41",
+    "version": "1.0.40",
     "require": {
         "php": ">=7.4.0",
         "magento/module-sales": ">=100.0",
@@ -19,13 +19,6 @@
         "files": [ "registration.php" ],
         "psr-4": {
             "Payplus\\PayplusGateway\\": ""
-        }
-    },
-    "repositories": {
-        "magento": {
-            "type": "composer",
-            "url": "https://repo.magento.com/",
-            "canonical": false
         }
     }
 }
