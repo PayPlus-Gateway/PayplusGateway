@@ -20,5 +20,12 @@
         "psr-4": {
             "Payplus\\PayplusGateway\\": ""
         }
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://packagist.org"
+        }
+    
     }
 }
