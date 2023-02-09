@@ -12,7 +12,7 @@ class DataAssignObserver extends AbstractDataAssignObserver
 {
     protected  $customerSession;
     public function __construct(
-        \Magento\Customer\Model\Session $customerSession,
+        \Magento\Customer\Model\Session $customerSession
     ){
         $this->customerSession = $customerSession;
     }
