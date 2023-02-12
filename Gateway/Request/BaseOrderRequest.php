@@ -168,13 +168,8 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'quantity'   => 1,
             ];
         }
-
-     /*   $totalItems = 0;
-        foreach ($orderDetails['items'] as $item) {
-            $quantity = ($item['quantity']) ?? 1;
-            $totalItems += ($item['price'] * $quantity);
-        }*/
-        $orderDetails['amount'] = $order->getGrandTotalAmount();
+        
+        $orderDetails['amount'] = round($order->getGrandTotalAmount(), ROUNDING_DECIMALS);
 
         if ($orderDetails['amount']!== $totalItems) {
 

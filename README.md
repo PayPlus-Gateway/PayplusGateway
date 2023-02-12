@@ -4,7 +4,7 @@ Tags: Payment Gateway, Credit Cards, Charges and Refunds, PayPlus, Subscriptions
 Requires at least: 3.0.1
 Tested up to: 7.4
 Requires PHP: 7.4
-Stable tag: 1.0.41
+Stable tag: 1.0.42
 PlugIn URL: https://www.payplus.co.il/magento
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
