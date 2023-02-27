@@ -105,34 +105,45 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
             }
         }
-
-
-
         foreach ($order->getItems() as $item) {
 
-            $itemAmount = $item->getPriceInclTax() * 100; // product price
+            $productOptions = $item->getProductOptions();
+            $productType = $item->getProductType();
+            $chackSimpleNoOptionBundle =(!empty($productOptions['bundle_selection_attributes']))?false:true;
+            if ($productType == "bundle"
+                ||( $chackSimpleNoOptionBundle && $productType == "simple") ):
+                $name = $item->getName();
+                if($productType == "bundle"){
 
-            if ($currencyCodeTo !=  $currencyCodeFrom) {
-                $itemAmount = $itemAmount * $rate;
-            }
+                    if(!empty($productOptions['bundle_options'])){
+                        $name.=" ".$this->getOptionProduct($productOptions['bundle_options']);
+                    }
 
-            $price =$itemAmount /100;
-            $price =    round($price, ROUNDING_DECIMALS);
-            $totalItems+=($price * $item->getQtyOrdered());
+                }
+                $itemAmount = $item->getPriceInclTax() * 100; // product price
 
-            // Tax
-            if($item->getTaxAmount()){
-                $vat_type =0;
-            }else{
-                $vat_type =2;
-            }
-            $orderDetails['items'][] = [
-                'name'          => $item->getName(),
-                'price'         => $price,
-                'quantity'   => $item->getQtyOrdered(),
-                'barcode'   => $item->getSku(),
-                'vat_type'=>$vat_type  // Tax
-            ];
+                if ($currencyCodeTo != $currencyCodeFrom) {
+                    $itemAmount = $itemAmount * $rate;
+                }
+
+                $price = $itemAmount / 100;
+                $price = round($price, ROUNDING_DECIMALS);
+                $totalItems += ($price * $item->getQtyOrdered());
+
+                // Tax
+                if ($item->getTaxAmount()) {
+                    $vat_type = 0;
+                } else {
+                    $vat_type = 2;
+                }
+                $orderDetails['items'][] = [
+                    'name' => $name,
+                    'price' => $price,
+                    'quantity' => $item->getQtyOrdered(),
+                    'barcode' => $item->getSku(),
+                    'vat_type' => $vat_type  // Tax
+                ];
+            endif;
         }
 
 
@@ -168,7 +179,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 'quantity'   => 1,
             ];
         }
-        
+
         $orderDetails['amount'] = round($order->getGrandTotalAmount(), ROUNDING_DECIMALS);
 
         if ($orderDetails['amount']!== $totalItems) {
@@ -193,5 +204,20 @@ abstract class BaseOrderRequest implements BuilderInterface
             'orderDetails' => $orderDetails,
             'meta' => []
         ];
+    }
+    public  function getOptionProduct($options){
+        $name="";
+
+        foreach($options as $key =>$option){
+            $temp = $option['label']." : ";
+            foreach($option['value'] as $key1 =>$value){
+                $temp.=$value['title']." ";
+            }
+            $name .=(empty($name))?$temp :",".$temp;
+
+        }
+        return " ( ".$name ." ) ";
+
+
     }
 }
