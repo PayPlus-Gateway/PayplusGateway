@@ -36,6 +36,7 @@ class ResponseCodeValidator extends AbstractValidator
         }
 
         $response = $validationSubject['response'];
+
         $this->_logger->debugOrder("Order response", $response);
         if ($this->isSuccessfulTransaction($response)) {
             return $this->createResult(
@@ -43,11 +44,23 @@ class ResponseCodeValidator extends AbstractValidator
                 []
             );
         } else {
+
+            if($response['message']==="API_KEY / SECRET_KEY ARE INCORRECT"){
+                $apikey =  $this->config->getValue(
+                    'payment/payplus_gateway/api_configuration/api_key',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+
+                $secretKey = $this->config->getValue(
+                    'payment/payplus_gateway/api_configuration/secret_key',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                $response['message'].="(current details: API KEY: ".$apikey." , SECRET KEY : ".$secretKey.")";
+            }
+
             return $this->createResult(
                 false,
                 [__('Gateway rejected the transaction.')],
                 [
-                    'gatewayresponse'=>json_encode($response),
+                    'gatewayresponse'=>json_encode($response ),
                     'paymentData'=> json_encode($validationSubject['payment']->getPayment()->toArray())
                 ]
             );

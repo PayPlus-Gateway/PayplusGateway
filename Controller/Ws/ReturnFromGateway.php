@@ -42,10 +42,15 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         }
 
         $params = $response['data'];
+        $status = true;
 
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $collection = $objectManager->create(\Magento\Sales\Model\Order::class);
+        $order = $collection->loadByIncrementId($params['more_info']);
+        $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
+        $status = $orderResponse->processResponse($params);
 
-
-        if ($this->config->getValue(
+      /*  if ($this->config->getValue(
             'payment/payplus_gateway/payment_page/use_callback',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         ) == 0) {
@@ -57,6 +62,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         } else {
             $status = true;
         }
+      */
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class)->truncate();
         $cartObject->saveQuote();
@@ -71,13 +77,8 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                     'payment/payplus_gateway/api_configuration/status_order_payplus',
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
-                /*  $statusOrder = Order::STATE_COMPLETE;
-                   $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
-                   $order->setState($statusOrder)->setStatus('complete');
-                   $order->save();*/
                 if($statusOrderPayplus){
                     $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
-                    //  $this->updateStatusByOrderId($params['more_info'],$statusOrderPayplus);
                     $order->addStatusHistoryComment($statusOrderPayplus." order id :" .$params['more_info']);
                     $order->setState($statusOrderPayplus)->setStatus($statusOrderPayplus);
                     $order->save();
@@ -88,30 +89,10 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                     $order->save();
                 }
 
-
-
             }
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;
     }
-    public function updateStatusByOrderId($orderId,$status){
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance(); // Instance of object manager
-        $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
-        $connection = $resource->getConnection();
-        $tableName = $resource->getTableName('sales_order');
 
-        if(!empty($tableName)){
-            $query = "SELECT  * FROM " . $tableName  ." WHERE increment_id=".$orderId;
-            $result=$connection->query($query);
-
-            if(count($result->fetchAll())){
-                $query = "UPDATE   " . $tableName  ." SET state='".$status."' ,
-                status='".$status."' WHERE increment_id=".$orderId;
-                $result=$connection->query($query);
-
-            }
-
-        }
-    }
 }
