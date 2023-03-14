@@ -24,11 +24,18 @@ $paymentTitle = $block->getMethod()->getConfigData('title', $block->getInfo()->g
             </tr>
             <?php foreach ($blockValues as $label => $value): ?>
                 <tr>
+
                     <th><?= $block->escapeHtml($label) ?>:</th>
                     <td>
-                        <?= $block->escapeHtml(
+                        <?php if($label==="Url Invoice"){
+                        echo   "<a target='_blank' href='"  .   $block->escapeHtml(
+                                nl2br($block->escapeHtml(implode("\n", $block->getValueAsArray($value, true))))
+                            )."'>". $block->escapeHtml($label)." </a>" ;
+                        }else{
+                        echo  $block->escapeHtml(
                             nl2br($block->escapeHtml(implode("\n", $block->getValueAsArray($value, true))))
-                        ) ?>
+                        );
+                         }?>
                     </td>
                 </tr>
             <?php endforeach; ?>

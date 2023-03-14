@@ -38,6 +38,7 @@ class Info extends ConfigurableInfo
 
         $additionalInformation = $info->getAdditionalInformation();
         if (isset($additionalInformation['paymentPageResponse'])) {
+
             $adPage = [];
             $pageData = $additionalInformation['paymentPageResponse'];
 
@@ -77,15 +78,22 @@ class Info extends ConfigurableInfo
             if (isset($additionalInformation['paymentPageResponse']['four_digits'])) {
                 $frontDisplayData['Last four digits'] = $adPage['Last four digits'] = $pageData['four_digits'];
             }
+
             if (isset($additionalInformation['paymentPageResponse']['expiry_month'])
                 && isset($additionalInformation['paymentPageResponse']['expiry_year'])
                 ) {
                     $frontDisplayData['Expiry'] = $adPage['Expiry'] = $additionalInformation['paymentPageResponse']['expiry_month']
                     .'/'.$additionalInformation['paymentPageResponse']['expiry_year'];
             }
+            if (isset($additionalInformation['paymentPageResponse']['invoice_original_url'])) {
+                $adPage['Url Invoice'] =$pageData['invoice_original_url'];
+            }
+
             $displayData['Checkout page response'] = $adPage;
         }
         if (isset($additionalInformation['chargeOrderResponse'])) {
+
+
             $adCharge = [];
             $chargeInfo = $additionalInformation['chargeOrderResponse'];
             $statusCodeShrt = $chargeInfo['data']['transaction']['status_code'];
@@ -109,8 +117,10 @@ class Info extends ConfigurableInfo
         }
 
         if ($this->getArea() != 'adminhtml') {
+
             return $transport->setData( ['Checkout page response:'=>$frontDisplayData]);
         }
+
         return $transport->setData($displayData);
     }
 

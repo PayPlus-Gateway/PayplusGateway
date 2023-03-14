@@ -149,19 +149,21 @@ abstract class BaseOrderRequest implements BuilderInterface
 
         $shippingAmount  = $payment->getPayment()->getBaseShippingAmount();
 
-        if ($shippingAmount) {
+
+      // if ($shippingAmount) {
             $itemAmount = $quote->getShippingAddress()->getShippingInclTax();
             if ($currencyCodeTo !=  $currencyCodeFrom) {
                 $itemAmount =  $itemAmount * $rate;
             }
             $price =    round($itemAmount, ROUNDING_DECIMALS);
             $totalItems+=$price;
+            $title =($shippingAmount)?__('Shipping'):__('Free Shipping');
             $orderDetails['items'][] = [
-                'name'         => __('Shipping'),
+                'name'         => $title,
                 'price'         => $price,
                 'shipping'   => true,
             ];
-        }
+      //  }
 
         $discount = $order->getBaseDiscountAmount();
         if ($discount) {
