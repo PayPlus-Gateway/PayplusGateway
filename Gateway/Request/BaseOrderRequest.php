@@ -5,6 +5,7 @@ namespace Payplus\PayplusGateway\Gateway\Request;
 use Magento\Framework\Event\Observer;
 use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
+use Magento\Framework\App\ResourceConnection;
 define('ROUNDING_DECIMALS',2);
 
 abstract class BaseOrderRequest implements BuilderInterface
@@ -13,15 +14,25 @@ abstract class BaseOrderRequest implements BuilderInterface
     public function __construct(
         \Magento\Checkout\Model\Session $session,
         \Magento\Customer\Model\Session $customerSession,
-        \Payplus\PayplusGateway\Logger\Logger $logger
+        \Payplus\PayplusGateway\Logger\Logger $logger,
+        \Magento\Integration\Model\Oauth\TokenFactory $tokenModelFactory,
+         \Magento\Vault\Api\PaymentTokenManagementInterface $paymenttokenmanagement,
+        ResourceConnection $resourceConnection
     ) {
         $this->session = $session;
         $this->customerSession = $customerSession;
         $this->_logger = $logger;
+        $this->paymenttokenmanagement = $paymenttokenmanagement;
+        $this->resourceConnection = $resourceConnection;
+
     }
 
     protected function collectCartData(array $buildSubject)
     {
+
+
+
+
         $totalItems = 0;
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
@@ -34,9 +45,12 @@ abstract class BaseOrderRequest implements BuilderInterface
         $payment = $buildSubject['payment'];
 
         $order = $payment->getOrder();
+
         $address = $order->getShippingAddress();
         $quote = $this->session->getQuote();
         $paymentMethod = $quote->getPayment()->getMethodInstance()->getCode();
+        $public_hash =$quote->getPayment()->getAdditionalInformation('public_hash');
+        $customer_id =$quote->getPayment()->getAdditionalInformation('customer_id');
 
         $orderDetails = [
             'charge_default' =>$this->customerSession->getPayplusMethodReq(),
@@ -78,8 +92,21 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
             }
         }
-   ;
+        if(!empty($public_hash) && !empty($customer_id)){
+            $connection = $this->resourceConnection->getConnection();
+            $table = $connection->getTableName('vault_payment_token');
+            $query = "Select details FROM  " . $table ." WHERE public_hash='".$public_hash."' AND customer_id=".$customer_id;
+            $result = $connection->fetchAll($query);
+            if(count($result)){
+                $result =$result[0]['details'];
+                $jsondata = str_replace('\\"', '"',$result);
+                $jsondata = preg_replace('/\\\"/',"\"", $jsondata);
+                $jsondata = preg_replace('/\\\'/',"\'", $jsondata);
+                $result =json_decode($jsondata,true);
+                $customer['customer_uid'] =$result['customer_uid'];
+            }
 
+        }
         if (!empty($customer)) {
 
             $orderDetails['customer'] = $customer;
