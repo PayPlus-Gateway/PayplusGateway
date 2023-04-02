@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.0.46 ) </label>
+                <label>PayPlus - Payment Gateway ( 1.0.48 ) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
@@ -153,6 +153,7 @@
                     <field id="debug_payplus_orders" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Debug payplus orders</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <frontend_model>Payplus\PayplusGateway\Block\System\Config\Form\Field\Disable</frontend_model>
                     </field>
                 </group>
                 <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">

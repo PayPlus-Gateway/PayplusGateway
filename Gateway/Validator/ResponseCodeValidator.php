@@ -55,7 +55,7 @@ class ResponseCodeValidator extends AbstractValidator
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
                 $response['message'].="(current details: API KEY: ".$apikey." , SECRET KEY : ".$secretKey.")";
             }
-
+            $this->_logger->debugOrder("Order response error", $response);
             return $this->createResult(
                 false,
                 [__('Gateway rejected the transaction.')],
