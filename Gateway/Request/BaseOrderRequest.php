@@ -154,7 +154,6 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
 
                 $price = $itemAmount / 100;
-                $price = round($price, ROUNDING_DECIMALS);
                 $totalItems += ($price * $item->getQtyOrdered());
 
                 // Tax
@@ -165,7 +164,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
                 $orderDetails['items'][] = [
                     'name' => $name,
-                    'price' => $price,
+                    'price' =>  round($price, ROUNDING_DECIMALS),
                     'quantity' => $item->getQtyOrdered(),
                     'barcode' => $item->getSku(),
                     'vat_type' => $vat_type  // Tax
@@ -209,16 +208,17 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }
 
+        $totalItems =round($totalItems,ROUNDING_DECIMALS);
         $orderDetails['amount'] = round($order->getGrandTotalAmount(), ROUNDING_DECIMALS);
 
-        if ($orderDetails['amount']!== $totalItems) {
+       /* if ($orderDetails['amount']!== $totalItems) {
 
             $orderDetails['items'][] = [
                 'name'         => __('Currency conversion rounding'),
                 'price'         => $orderDetails['amount'] - $totalItems,
                 'quantity'   => 1,
             ];
-        }
+        }*/
         $orderDetails['paying_vat'] = true;
 
         if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 0) {
