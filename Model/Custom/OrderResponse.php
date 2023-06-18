@@ -25,7 +25,7 @@ class OrderResponse
         $status = false;
 
         if (!$direct) {
-            if ($payment->getData('additional_data') != $params['page_request_uid']) {
+            if (isset( $params['page_request_uid']) && $payment->getData('additional_data') != $params['page_request_uid']) {
                 return $status;
             }
             if ($this->order->getStatus() != 'pending_payment') {
@@ -39,7 +39,7 @@ class OrderResponse
         } else {
             $this->order->setCanSendNewEmailFlag(true);
             $this->order->setSendEmail(true);
-            if ($params['type'] =='Approval') {
+            if (isset($params['type']) && $params['type'] =='Approval') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_AUTH;
                 $payment->registerAuthorizationNotification($params['amount']);
                 $payment->setIsTransactionPending(true);
@@ -48,7 +48,7 @@ class OrderResponse
                 $this->order->setStatus('pending');
             }
 
-            if ($params['type'] =='Charge') {
+            if ((isset($params['type'] )&& $params['type'] =='Charge')||$params['status'] ) {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE;
                 $payment->registerCaptureNotification($params['amount']);
 
@@ -58,13 +58,24 @@ class OrderResponse
             $status = true;
         }
 
+
         $payment->setCcStatus($params['status_code']);
-        $payment->setCcLast4($params['four_digits']);
-        $payment->setTransactionId($params['transaction_uid']);
-        $payment->setParentTransactionId($params['transaction_uid']);
         $payment->addTransaction($transactionType);
-        $payment->setCcExpMonth($params['expiry_month']);
-        $payment->setCcExpYear($params['expiry_year']);
+        if(isset($params['four_digits'])){
+            $payment->setCcLast4($params['four_digits']);
+        }
+        if(isset($params['transaction_uid'])){
+            $payment->setTransactionId($params['transaction_uid']);
+            $payment->setParentTransactionId($params['transaction_uid']);
+        }
+        if(isset($params['expiry_month'])){
+            $payment->setCcExpMonth($params['expiry_month']);
+        }
+        if(isset($params['expiry_year'])){
+            $payment->setCcExpYear($params['expiry_year']);
+        }
+
+
         $paymentAdditionalInformation = ['paymentPageResponse'=>$params];
 
         if (isset($params['token_uid'])

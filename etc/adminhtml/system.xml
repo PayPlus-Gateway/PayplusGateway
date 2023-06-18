@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.0.50 ) </label>
+                <label>PayPlus - Payment Gateway ( 1.0.51 ) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
@@ -133,6 +133,10 @@
                    <field id="hide_payments" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Hide payments field</label>
                         <source_model>Payplus\PayplusGateway\Model\Adminhtml\Source\DefaultOrHide</source_model>
+                    </field>
+                    <field id="subsciption_enabled" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Subsciption Enabled</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
                 </group>
                 <group id="orders_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">

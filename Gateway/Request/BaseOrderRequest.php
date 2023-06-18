@@ -1,7 +1,6 @@
 <?php
 
 namespace Payplus\PayplusGateway\Gateway\Request;
-
 use Magento\Framework\Event\Observer;
 use Magento\Payment\Gateway\Data\PaymentDataObjectInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
@@ -29,11 +28,9 @@ abstract class BaseOrderRequest implements BuilderInterface
 
     protected function collectCartData(array $buildSubject)
     {
-
-
-
-
         $totalItems = 0;
+        $subsciptionEnabled=0;
+        $recurringSettings =null;
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
@@ -132,7 +129,31 @@ abstract class BaseOrderRequest implements BuilderInterface
                 }
             }
         }
+
         foreach ($order->getItems() as $item) {
+            $productId=$item->getProductId();
+
+            $product = $objectManager->create('Magento\Catalog\Model\Product')->load($productId);
+            $subsciptionEnabled =intval($product->getData('subsciption_enabled'));
+
+            if($subsciptionEnabled){
+
+                $recurringType =intval($product->getData('recurring_type'));
+                $numberOfCharges =intval($product->getData('number_of_charges'));
+                $jumpPayments =intval($product->getData('jump_payments'));
+                $recurringSettings=
+                    array(
+                        'instant_first_payment'=>true,
+                        'recurring_type'=> $recurringType,
+                        'recurring_range'=>1,
+                        'number_of_charges'=>$numberOfCharges,
+                        'start_date_on_payment_date'=>true,
+                        'jump_payments'=>$jumpPayments,
+                        'successful_invoice'=>true,
+                        'customer_failure_email'=>true,
+                        'send_customer_success_email'=>true);
+
+            }
 
             $productOptions = $item->getProductOptions();
             $productType = $item->getProductType();
@@ -220,6 +241,13 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }*/
         $orderDetails['paying_vat'] = true;
+        if($recurringSettings){
+            $orderDetails['recurring_settings']=$recurringSettings;
+            $orderDetails['charge_method'] =3;
+        }
+
+
+
 
         if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 0) {
            $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
@@ -228,6 +256,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $orderDetails['paying_vat'] = false;
             }
         }
+
 
         return [
             'orderDetails' => $orderDetails,

@@ -45,7 +45,8 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
         $request['refURL_success'] = $getStoreURL.'payplus_gateway/ws/returnfromgateway';
         $request['refURL_failure'] = $getStoreURL.'checkout/onepage/failure';
         $request['refURL_cancel'] = $getStoreURL.'checkout/#payment';
-        if ($this->config->getValue('payment/payplus_gateway/orders_config/payment_action', $scp) > 0) {
+        if ( ( $data['orderDetails']['charge_method']!==3) &&
+            $this->config->getValue('payment/payplus_gateway/orders_config/payment_action', $scp) > 0) {
             $request['charge_method'] = $this->config->getValue(
                 'payment/payplus_gateway/orders_config/payment_action',
                 $scp

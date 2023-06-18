@@ -11,7 +11,9 @@ class Logger extends \Monolog\Logger
             'payment/payplus_gateway/orders_config/debug_payplus_orders',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
+
         if ($debugOrder === true) {
+            $data =(is_array($data))?$data:array($data);
             $this->info($stage, $data);
         }
     }

@@ -42,10 +42,10 @@ class Info extends ConfigurableInfo
             $adPage = [];
             $pageData = $additionalInformation['paymentPageResponse'];
 
-            $textCapturedReturn =  ($pageData['type'] == 'Approval') ? 'authorized':'charged';
+            $textCapturedReturn =  (isset($pageData['type']) &&$pageData['type'] == 'Approval') ? 'authorized':'charged';
             $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
 
-            $frontDisplayData['Status description'] = $adPage['Status description'] = $pageData['status_description'];
+            $frontDisplayData['Status description'] = $adPage['Status description'] = ( isset($pageData['status_description']))?$pageData['status_description']:'';
             $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
             if (isset($additionalInformation['paymentPageResponse']['number_of_payments'])
                 && $additionalInformation['paymentPageResponse']['number_of_payments'] > 1) {
