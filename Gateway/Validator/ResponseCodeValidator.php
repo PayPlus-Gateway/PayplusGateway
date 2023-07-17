@@ -31,13 +31,15 @@ class ResponseCodeValidator extends AbstractValidator
      */
     public function validate(array $validationSubject)
     {
+
         if (!isset($validationSubject['response']) || !is_array($validationSubject['response'])) {
+            $this->_logger->debugOrder("not response", $validationSubject);
             throw new \InvalidArgumentException('Response does not exist');
         }
 
         $response = $validationSubject['response'];
 
-        $this->_logger->debugOrder("Order response", $response);
+
         if ($this->isSuccessfulTransaction($response)) {
             return $this->createResult(
                 true,

@@ -16,13 +16,14 @@ class AfterPlaceOrder implements ObserverInterface
 
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
+
         $order = $observer->getEvent()->getOrder();
-        $order->setCanSendNewEmailFlag(false);
+      /*  $order->setCanSendNewEmailFlag(false);
         $order->setEmailSent(false);
-        $order->setSendEmail(false);
+        $order->setSendEmail(false);*/
         $payment = $order->getPayment();
         $transactionID = $payment->getAdditionalInformation('transaction_uid');
-        
+
         if ($transactionID && $order) {
             $response = $this->apiConnector->checkTransactionAgainstIPN([
                 'transaction_uid' => $transactionID
