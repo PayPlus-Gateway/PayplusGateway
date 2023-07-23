@@ -31,12 +31,10 @@ class ResponseCodeValidator extends AbstractValidator
      */
     public function validate(array $validationSubject)
     {
-
         if (!isset($validationSubject['response']) || !is_array($validationSubject['response'])) {
             $this->_logger->debugOrder("not response", $validationSubject);
             throw new \InvalidArgumentException('Response does not exist');
         }
-
         $response = $validationSubject['response'];
 
 
@@ -45,17 +43,23 @@ class ResponseCodeValidator extends AbstractValidator
                 true,
                 []
             );
+
         } else {
 
-            if($response['message']==="API_KEY / SECRET_KEY ARE INCORRECT"){
-                $apikey =  $this->config->getValue(
-                    'payment/payplus_gateway/api_configuration/api_key',
-                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
-                $secretKey = $this->config->getValue(
-                    'payment/payplus_gateway/api_configuration/secret_key',
-                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-                $response['message'].="(current details: API KEY: ".$apikey." , SECRET KEY : ".$secretKey.")";
+            if(!empty($response['message'])) {
+                if ($response['message'] === "API_KEY / SECRET_KEY ARE INCORRECT") {
+                    $apikey = $this->config->getValue(
+                        'payment/payplus_gateway/api_configuration/api_key',
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+
+                    $secretKey = $this->config->getValue(
+                        'payment/payplus_gateway/api_configuration/secret_key',
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                    $response['message'] .= "(current details: API KEY: " . $apikey . " , SECRET KEY : " . $secretKey . ")";
+
+                }
+
             }
             $this->_logger->debugOrder("Order response error", $response);
             return $this->createResult(
