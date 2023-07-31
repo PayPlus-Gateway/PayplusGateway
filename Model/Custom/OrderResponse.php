@@ -54,7 +54,6 @@ class OrderResponse
                 $this->order->setState('complete');
                 $this->order->setStatus('complete');
             }
-
             $status = true;
         }
 
