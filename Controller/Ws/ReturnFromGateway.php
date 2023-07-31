@@ -15,12 +15,14 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
         \Magento\Framework\Webapi\Rest\Request $request,
         \Payplus\PayplusGateway\Model\Custom\APIConnector $apiConnector,
-        \Magento\Framework\Controller\ResultFactory $resultFactory
+        \Magento\Framework\Controller\ResultFactory $resultFactory,
+        \Payplus\PayplusGateway\Logger\Logger $logger
     ) {
 
         parent::__construct($request, $config, $apiConnector);
         $this->config = $config;
         $this->resultFactory = $resultFactory;
+        $this->_logger = $logger;
     }
 
     public function execute()
@@ -31,11 +33,12 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
 
         $resultRedirect = $this->resultFactory->create('redirect');
         $params = $this->request->getParams();
+        $this->_logger->debugOrder('params response get',$params);
         $response = $this->apiConnector->checkTransactionAgainstIPN([
             'transaction_uid' => $params['transaction_uid'],
             'payment_request_uid' => $params['page_request_uid']
         ]);
-
+        $this->_logger->debugOrder('ipn  payplus',$response);
         if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
             $resultRedirect->setPath('checkout/onepage/failure');
             return $resultRedirect;
@@ -72,12 +75,14 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         } else {
             $type =$response['data']['type'];
 
+
             if($type=="Charge"){
                 $statusOrderPayplus=$this->config->getValue(
                     'payment/payplus_gateway/api_configuration/status_order_payplus',
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
                 if($statusOrderPayplus){
+
                     $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
                     $order->addStatusHistoryComment($statusOrderPayplus." order id :" .$params['more_info']);
                     $order->setState($statusOrderPayplus)->setStatus($statusOrderPayplus);

@@ -8,18 +8,21 @@ class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
         \Magento\Framework\Webapi\Rest\Request $request,
         \Payplus\PayplusGateway\Model\Custom\APIConnector $apiConnector,
-        \Magento\Framework\Controller\ResultFactory $resultFactory
+        \Magento\Framework\Controller\ResultFactory $resultFactory,
+        \Payplus\PayplusGateway\Logger\Logger $logger
     ) {
 
         parent::__construct($request, $config, $apiConnector);
         $this->config = $config;
         $this->resultFactory = $resultFactory;
+        $this->_logger=$logger;
     }
 
     public function execute()
     {
         $responseRequest = $this->resultFactory->create('json');
         $params = $this->request->getBodyParams();
+        $this->_logger->debugOrder('callback  payplus',$params);
         $response = $this->apiConnector->checkTransactionAgainstIPN([
             'transaction_uid' =>  $params['transaction']['uid'],
             'payment_request_uid' =>  $params['transaction']['payment_page_request_uid']
@@ -30,6 +33,7 @@ class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
             return $response;
         }
         $params = $response['data'];
+        $this->_logger->debugOrder('callback ipn payplus',$params);
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $collection = $objectManager->create(\Magento\Sales\Model\Order::class);
         $order = $collection->loadByIncrementId($params['more_info']);

@@ -3,35 +3,35 @@
 namespace Payplus\PayplusGateway\Model\Custom;
 
 use DateTime;
+use Magento\Sales\Model\Order;
 use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
 use Payplus\PayplusGateway\Model\Ui\ConfigProvider;
-
+use \Magento\Framework\App\Config\ScopeConfigInterface;
 use function PHPUnit\Framework\isNull;
 
 class OrderResponse
 {
     public $order;
     public $orderSender;
-    public function __construct($order) {
+    public function __construct($order)
+    {
         $this->order = $order;
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $this->orderSender = $objectManager->create(\Magento\Sales\Model\Order\Email\Sender\OrderSender::class);
     }
-
     public function processResponse($params, $direct = false)
     {
 
         $payment = $this->order->getPayment();
         $status = false;
-
-        if (!$direct) {
+       /* if (!$direct) {
             if ($payment->getData('additional_data') != $params['page_request_uid']) {
                 return $status;
             }
             if ($this->order->getStatus() != 'pending_payment') {
                 return $status;
             }
-        }
+        }*/
 
         if ($params['status_code'] !='000') {
             $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_VOID;
@@ -51,8 +51,8 @@ class OrderResponse
             if ($params['type'] =='Charge') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE;
                 $payment->registerCaptureNotification($params['amount']);
-
-
+                $this->order->setState('complete');
+                $this->order->setStatus('complete');
             }
 
             $status = true;

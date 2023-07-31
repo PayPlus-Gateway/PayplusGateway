@@ -137,7 +137,7 @@ abstract class BaseOrderRequest implements BuilderInterface
             $productOptions = $item->getProductOptions();
             $productType = $item->getProductType();
             $chackSimpleNoOptionBundle =(!empty($productOptions['bundle_selection_attributes']))?false:true;
-            if ($productType == "bundle"
+            if ($productType == "bundle" || $productType=="configurable"
                 ||( $chackSimpleNoOptionBundle && $productType == "simple") ):
                 $name = $item->getName();
                 if($productType == "bundle"){
