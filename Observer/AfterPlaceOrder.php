@@ -18,9 +18,9 @@ class AfterPlaceOrder implements ObserverInterface
     {
 
         $order = $observer->getEvent()->getOrder();
-      /*  $order->setCanSendNewEmailFlag(false);
+        $order->setCanSendNewEmailFlag(false);
         $order->setEmailSent(false);
-        $order->setSendEmail(false);*/
+        $order->setSendEmail(false);
         $payment = $order->getPayment();
         $transactionID = $payment->getAdditionalInformation('transaction_uid');
 
