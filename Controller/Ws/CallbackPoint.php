@@ -23,6 +23,10 @@ class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
         $responseRequest = $this->resultFactory->create('json');
         $params = $this->request->getBodyParams();
         $this->_logger->debugOrder('callback  payplus',$params);
+
+        if (!isset( $params['transaction']) || !is_array ($params['transaction'])) {
+            throw new \InvalidArgumentException('Response does not exist');
+        }
         $response = $this->apiConnector->checkTransactionAgainstIPN([
             'transaction_uid' =>  $params['transaction']['uid'],
             'payment_request_uid' =>  $params['transaction']['payment_page_request_uid']

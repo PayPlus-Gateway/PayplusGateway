@@ -56,7 +56,13 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             $request['add_data'] = "1";
         }
         if ($this->config->getValue('payment/payplus_gateway/payment_page/use_callback', $scp) == 1) {
-            $request['refURL_callback'] = 'https://webhook.site/fb12a45a-bf94-4acf-832e-1bbe7302cb93';
+            $testUrlCallback=$this->config->getValue('payment/payplus_gateway/payment_page/test_url_callback', $scp);
+            if(!empty($testUrlCallback)){
+                $request['refURL_callback'] =$testUrlCallback;
+            }else{
+                $request['refURL_callback'] = $getStoreURL.'payplus_gateway/ws/callbackpoint';
+
+            }
             if ($this->config->getValue('payment/payplus_gateway/payment_page/success_page_action', $scp) == 0) {
                 unset($request['refURL_success']);
             } elseif ($this->config->getValue('payment/payplus_gateway/payment_page/success_page_action', $scp) == 2) {
