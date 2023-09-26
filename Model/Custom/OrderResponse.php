@@ -21,9 +21,9 @@ class OrderResponse
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $this->orderSender = $objectManager->create(\Magento\Sales\Model\Order\Email\Sender\OrderSender::class);
         $this->config  =$objectManager->create( \Magento\Framework\App\Config\ScopeConfigInterface::class);
-        $this->statusGlobal =$this->config->getValue(
+      /*  $this->statusGlobal =$this->config->getValue(
             'payment/payplus_gateway/api_configuration/status_order_payplus',
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE);*/
 
 
 
@@ -60,9 +60,11 @@ class OrderResponse
             if ($params['type'] =='Charge') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE;
                 $payment->registerCaptureNotification($params['amount']);
-                $status =(!empty($this->statusGlobal))?$this->statusGlobal:'complete';
-                $this->order->setState($status);
-                $this->order->setStatus($status);
+             //   $status =(!empty($this->statusGlobal))?$this->statusGlobal:'complete';
+                $this->order->setState('complete');
+                $this->order->setStatus('complete');
+              //  $this->order->setState($status);
+              //  $this->order->setStatus($status);
 
             }
             $status = true;
