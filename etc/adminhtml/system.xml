@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.0.55) </label>
+                <label>PayPlus - Payment Gateway ( 1.0.56) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
