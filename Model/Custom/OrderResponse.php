@@ -15,6 +15,7 @@ class OrderResponse
     public $orderSender;
     public  $config;
     public  $statusGlobal;
+    public  $stateOGlobal;
     public function __construct($order)
     {
         $this->order = $order;
@@ -24,7 +25,11 @@ class OrderResponse
         $this->statusGlobal =$this->config->getValue(
             'payment/payplus_gateway/api_configuration/status_order_payplus',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-
+        $this->statusGlobal = ($this->statusGlobal) ? $this->statusGlobal:'complete';
+        $this->stateOGlobal=$this->config->getValue(
+            'payment/payplus_gateway/api_configuration/state_order_payplus',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $this->stateOGlobal =( $this->stateOGlobal)?  $this->stateOGlobal:'complete';
 
 
     }
@@ -60,9 +65,9 @@ class OrderResponse
             if ($params['type'] =='Charge') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE;
                 $payment->registerCaptureNotification($params['amount']);
-                $status =(!empty($this->statusGlobal))?$this->statusGlobal:'complete';
-                $this->order->setState($status);
-                $this->order->setStatus($status);
+
+                $this->order->setState(  $this->stateOGlobal);
+                $this->order->setStatus(  $this->statusGlobal);
 
             }
             $status = true;

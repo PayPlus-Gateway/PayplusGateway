@@ -81,16 +81,20 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                     'payment/payplus_gateway/api_configuration/status_order_payplus',
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
+                $stateOrderPayplus=$this->config->getValue(
+                    'payment/payplus_gateway/api_configuration/state_order_payplus',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                $stateOrderPayplus =($stateOrderPayplus)? $stateOrderPayplus:'complete';
                 if($statusOrderPayplus){
 
                     $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
                     $order->addStatusHistoryComment($statusOrderPayplus." order id :" .$params['more_info']);
-                    $order->setState($statusOrderPayplus)->setStatus($statusOrderPayplus);
+                    $order->setState($stateOrderPayplus)->setStatus($statusOrderPayplus);
                     $order->save();
                 }else {
                     $statusOrder = Order::STATE_COMPLETE;
                     $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
-                    $order->setState($statusOrder)->setStatus('complete');
+                    $order->setState($stateOrderPayplus)->setStatus($statusOrder);
                     $order->save();
                 }
 

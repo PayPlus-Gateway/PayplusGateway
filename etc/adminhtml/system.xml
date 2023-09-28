@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.0.56) </label>
+                <label>PayPlus - Payment Gateway ( 1.0.57) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
@@ -51,6 +51,10 @@
                     </field>
                     <field id="status_order_payplus" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>select Order Status Complete </label>
+                        <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
+                    </field>
+                    <field id="state_order_payplus" translate="label comment" type="select" sortOrder="41" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>select Order State Complete </label>
                         <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                     </field>
                 </group>
