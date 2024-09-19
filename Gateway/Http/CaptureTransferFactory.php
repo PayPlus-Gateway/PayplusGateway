@@ -6,6 +6,8 @@ use Magento\Payment\Gateway\Http\TransferInterface;
 
 class CaptureTransferFactory extends TransferFactoryBase
 {
+    public $config;
+    public $storeManager;
     protected $gatewayMethod = '/api/v1.0/Transactions/ChargeByTransactionUID';
     /**
      * @var TransferBuilder

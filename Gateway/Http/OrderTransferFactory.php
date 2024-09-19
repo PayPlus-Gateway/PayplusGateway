@@ -7,6 +7,11 @@ use Magento\Payment\Gateway\Http\TransferFactoryInterface;
 
 class OrderTransferFactory extends TransferFactoryBase implements TransferFactoryInterface
 {
+    public $config;
+    public $storeManager;
+    public $_store;
+    public $_logger;
+    
     protected $gatewayMethod = '/api/v1.0/PaymentPages/generateLink';
     /**
      * @var TransferBuilder

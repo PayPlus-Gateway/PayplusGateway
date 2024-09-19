@@ -7,6 +7,8 @@ use Magento\Payment\Gateway\Http\TransferFactoryInterface;
 
 class VaultOrderTransferFactory extends TransferFactoryBase implements TransferFactoryInterface
 {
+    public $config;
+    public $storeManager;
     protected $gatewayMethod = '/api/v1.0/PaymentPages/generateLink';
     /**
      * @var TransferBuilder

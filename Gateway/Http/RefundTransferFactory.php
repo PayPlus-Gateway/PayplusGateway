@@ -8,7 +8,7 @@ use Magento\Payment\Gateway\Http\TransferFactoryInterface;
 class RefundTransferFactory extends TransferFactoryBase implements TransferFactoryInterface
 {
     protected $gatewayMethod = '/api/v1.0/Transactions/RefundByTransactionUID';
-
+    public $transferBuilder;
     public function __construct(
         TransferBuilder $transferBuilder,
         \Magento\Framework\App\Config\ScopeConfigInterface $config

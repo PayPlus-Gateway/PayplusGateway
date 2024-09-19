@@ -10,7 +10,9 @@ use \Magento\Framework\App\CsrfAwareActionInterface;
 abstract class ApiController implements CsrfAwareActionInterface, \Magento\Framework\App\ActionInterface
 {
     protected $_helper;
-
+    public $request;
+    public $config;
+    public $apiConnector;
     public function __construct(
         \Magento\Framework\Webapi\Rest\Request $request,
         \Magento\Framework\App\Config\ScopeConfigInterface $config,

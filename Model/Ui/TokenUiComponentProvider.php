@@ -28,7 +28,7 @@ class TokenUiComponentProvider implements TokenUiComponentProviderInterface
         'visa' => 'VI',
         'discover' => 'DI',
     ];
-
+    public $urlBuilder;
     /**
      * @param TokenUiComponentInterfaceFactory $componentFactory
      * @param UrlInterface $urlBuilder

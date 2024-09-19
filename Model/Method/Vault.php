@@ -27,7 +27,9 @@ use Magento\Framework\Serialize\Serializer\Json;
 class Vault implements VaultPaymentInterface
 {
     const TOKEN_METADATA_KEY = 'token_metadata';
-
+    public $commandPool;
+    public $commandExecutor;
+    public $paymentDataObjectFactory;
     /**
      * @var string
      */

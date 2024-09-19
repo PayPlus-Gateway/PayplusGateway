@@ -9,6 +9,10 @@ use Magento\Framework\App\Config\Storage\WriterInterface;
 
 class ConfigChange implements ObserverInterface
 {
+    public $request;
+    public $configWriter;
+    public $mathRandom;
+    public $curl;
     public function __construct(
         RequestInterface $request,
         WriterInterface $configWriter,

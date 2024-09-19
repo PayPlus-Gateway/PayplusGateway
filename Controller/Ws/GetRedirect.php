@@ -15,7 +15,9 @@ class GetRedirect implements \Magento\Framework\App\ActionInterface
      */
 
     protected $transactionsRepository;
-
+    public $orderRepository;
+    public $request;
+    public $apiConnector;
     public function __construct(
         \Magento\Framework\Controller\Result\JsonFactory $resultJsonFactory,
         \Magento\Sales\Api\OrderRepositoryInterface $orderRepository,

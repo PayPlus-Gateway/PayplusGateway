@@ -4,6 +4,9 @@ namespace Payplus\PayplusGateway\Controller\Ws;
 
 class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
 {
+    public $resultFactory;
+    public $_logger;
+    
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
         \Magento\Framework\Webapi\Rest\Request $request,

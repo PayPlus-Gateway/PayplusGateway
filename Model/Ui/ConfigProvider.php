@@ -8,13 +8,13 @@ class ConfigProvider implements ConfigProviderInterface
 {
     const CODE = 'payplus_gateway';
     const CC_VAULT_CODE = 'payplus_cc_vault';
-
+    public $config;
     /**
      * Retrieve assoc array of checkout configuration
      *
      * @return array
      */
-
+    
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $config
     ) {

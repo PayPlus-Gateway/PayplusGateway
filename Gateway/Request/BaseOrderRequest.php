@@ -11,6 +11,11 @@ define('ROUNDING_DECIMALS',2);
 abstract class BaseOrderRequest implements BuilderInterface
 {
     protected $session;
+    protected $customerSession;
+    protected $_logger;
+    protected $paymenttokenmanagement;
+    protected $resourceConnection;
+
     public function __construct(
         \Magento\Checkout\Model\Session $session,
         \Magento\Customer\Model\Session $customerSession,
@@ -29,10 +34,6 @@ abstract class BaseOrderRequest implements BuilderInterface
 
     protected function collectCartData(array $buildSubject)
     {
-
-
-
-
         $totalItems = 0;
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
@@ -176,22 +177,21 @@ abstract class BaseOrderRequest implements BuilderInterface
         $shippingAmount  = $payment->getPayment()->getBaseShippingAmount();
 
 
-      // if ($shippingAmount) {
-            $itemAmount = $quote->getShippingAddress()->getShippingInclTax();
-            if ($currencyCodeTo !=  $currencyCodeFrom) {
-                $itemAmount =  $itemAmount * $rate;
-            }
-            $price =    round($itemAmount, ROUNDING_DECIMALS);
-            $totalItems+=$price;
-            $title =($shippingAmount)?__('Shipping'):__('Free Shipping');
-            $orderDetails['items'][] = [
-                'name'         => $title,
-                'price'         => $price,
-                'shipping'   => true,
-            ];
-      //  }
+        $itemAmount = $quote->getShippingAddress()->getShippingInclTax();
+        if ($currencyCodeTo !=  $currencyCodeFrom) {
+            $itemAmount =  $itemAmount * $rate;
+        }
+        $price =    round($itemAmount, ROUNDING_DECIMALS);
+        $totalItems+=$price;
+        $title =($shippingAmount)?__('Shipping'):__('Free Shipping');
+        $orderDetails['items'][] = [
+            'name'         => $title,
+            'price'         => $price,
+            'shipping'   => true,
+        ];
 
-        $discount = $order->getBaseDiscountAmount();
+        $discount = $payment->getPayment()->getOrder()->getBaseDiscountAmount();
+
         if ($discount) {
             if ($taxRate) {
                 $discount *=$taxRate;

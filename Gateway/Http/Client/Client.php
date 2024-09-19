@@ -10,6 +10,7 @@ use Magento\Payment\Gateway\Http\TransferInterface;
 
 class Client implements ClientInterface
 {
+    public $apiConnector;
     public function __construct(
         \Payplus\PayplusGateway\Model\Custom\APIConnector $apiConnector
     ) {
