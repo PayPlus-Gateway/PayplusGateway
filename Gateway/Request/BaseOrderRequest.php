@@ -10,11 +10,11 @@ define('ROUNDING_DECIMALS',2);
 
 abstract class BaseOrderRequest implements BuilderInterface
 {
-    protected $session;
-    protected $customerSession;
-    protected $_logger;
-    protected $paymenttokenmanagement;
-    protected $resourceConnection;
+    public $session;
+    public $customerSession;
+    public $_logger;
+    public $paymenttokenmanagement;
+    public $resourceConnection;
 
     public function __construct(
         \Magento\Checkout\Model\Session $session,

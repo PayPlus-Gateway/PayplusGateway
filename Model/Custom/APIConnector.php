@@ -9,7 +9,7 @@ class APIConnector
     private $body;
     private $headers;
     private $logger;
-    private $config;
+    public $config;
     
     const SCPSTORES = \Magento\Store\Model\ScopeInterface::SCOPE_STORES;
     const SCPWEBSITES = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;

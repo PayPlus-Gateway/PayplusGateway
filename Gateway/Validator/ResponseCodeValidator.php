@@ -11,8 +11,8 @@ use Magento\Payment\Gateway\Validator\ResultInterfaceFactory;
 
 class ResponseCodeValidator extends AbstractValidator
 {
-    protected $_logger;
-    protected $config;
+    public $_logger;
+    public $config;
     public function __construct(
         ResultInterfaceFactory $resultFactory,
         \Payplus\PayplusGateway\Logger\Logger $logger,

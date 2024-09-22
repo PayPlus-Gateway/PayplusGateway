@@ -11,15 +11,15 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
 
     protected $transactionsRepository;
 
-    protected $config;
+    public $config;
 
-    protected $resultJsonFactory;
+    public $resultJsonFactory;
 
-    protected $apiConnector;
+    public $apiConnector;
 
-    protected $request;
+    public $request;
 
-    protected $_logger;
+    public $_logger;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $config,
