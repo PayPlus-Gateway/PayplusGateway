@@ -9,7 +9,7 @@
                 <merchant_gateway_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
                 <order_status>pending_payment</order_status>
                 <payment_action>order</payment_action>
-                <version>1.0.57</version>
+                <version>1.1.0</version>
                 <title>Pay with credit or debit card using PayPlus</title>
                 <currency>ILS</currency>
                 <can_order_vault>1</can_order_vault>
