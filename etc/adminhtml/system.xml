@@ -50,11 +50,19 @@
                         <config_path>payment/payplus_enable_cc_vault_always/active</config_path>
                     </field>
                     <field id="status_order_payplus" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>select Order Status Complete </label>
+                        <label>Charge order status complete </label>
                         <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                     </field>
                     <field id="state_order_payplus" translate="label comment" type="select" sortOrder="41" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>select Order State Complete </label>
+                        <label>Charge order state complete </label>
+                        <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
+                    </field>
+                    <field id="status_approval_order_payplus" translate="label comment" type="select" sortOrder="42" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Approval order status approved </label>
+                        <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
+                    </field>
+                    <field id="state_approval_order_payplus" translate="label comment" type="select" sortOrder="43" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Approval order state approved </label>
                         <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                     </field>
                 </group>

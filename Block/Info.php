@@ -1,8 +1,10 @@
 <?php
+
 /**
  * Copyright © 2016 Magento. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Payplus\PayplusGateway\Block;
 
 use Magento\Framework\Phrase;
@@ -37,18 +39,21 @@ class Info extends ConfigurableInfo
         $frontDisplayData = [];
 
         $additionalInformation = $info->getAdditionalInformation();
+
         if (isset($additionalInformation['paymentPageResponse'])) {
 
             $adPage = [];
             $pageData = $additionalInformation['paymentPageResponse'];
 
-            $textCapturedReturn =  ($pageData['type'] == 'Approval') ? 'authorized':'charged';
-            $adPage['Status'] = $pageData['status'].' ('. $pageData['status_code'].')';
+            $textCapturedReturn =  ($pageData['type'] == 'Approval') ? 'authorized' : 'charged';
+            $adPage['Status'] = $pageData['status'] . ' (' . $pageData['status_code'] . ')';
 
             $frontDisplayData['Status description'] = $adPage['Status description'] = $pageData['status_description'];
-            $adPage['Amount '.$textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
-            if (isset($additionalInformation['paymentPageResponse']['number_of_payments'])
-                && $additionalInformation['paymentPageResponse']['number_of_payments'] > 1) {
+            $adPage['Amount ' . $textCapturedReturn] = $priceHelper->currency($pageData['amount'], true, false, 'USD');
+            if (
+                isset($additionalInformation['paymentPageResponse']['number_of_payments'])
+                && $additionalInformation['paymentPageResponse']['number_of_payments'] > 1
+            ) {
                 $adPage['Number of payments'] = $pageData['number_of_payments'];
                 $adPage['First payment'] = $pageData['first_payment_amount'];
                 $adPage['Subsequent payments'] = $pageData['rest_payments_amount'];
@@ -75,18 +80,22 @@ class Info extends ConfigurableInfo
             if (isset($additionalInformation['paymentPageResponse']['approval_num'])) {
                 $frontDisplayData['Approval number'] = $adPage['Approval number'] = $pageData['approval_num'];
             }
+            if (isset($additionalInformation['paymentPageResponse']['clearing_name'])) {
+                $frontDisplayData['Card'] = $adPage['Card'] = $pageData['clearing_name'];
+            }
             if (isset($additionalInformation['paymentPageResponse']['four_digits'])) {
                 $frontDisplayData['Last four digits'] = $adPage['Last four digits'] = $pageData['four_digits'];
             }
 
-            if (isset($additionalInformation['paymentPageResponse']['expiry_month'])
+            if (
+                isset($additionalInformation['paymentPageResponse']['expiry_month'])
                 && isset($additionalInformation['paymentPageResponse']['expiry_year'])
-                ) {
-                    $frontDisplayData['Expiry'] = $adPage['Expiry'] = $additionalInformation['paymentPageResponse']['expiry_month']
-                    .'/'.$additionalInformation['paymentPageResponse']['expiry_year'];
+            ) {
+                $frontDisplayData['Expiry'] = $adPage['Expiry'] = $additionalInformation['paymentPageResponse']['expiry_month']
+                    . '/' . $additionalInformation['paymentPageResponse']['expiry_year'];
             }
             if (isset($additionalInformation['paymentPageResponse']['invoice_original_url'])) {
-                $adPage['Url Invoice'] =$pageData['invoice_original_url'];
+                $adPage['Url Invoice'] = $pageData['invoice_original_url'];
             }
 
             $displayData['Checkout page response'] = $adPage;
@@ -97,7 +106,7 @@ class Info extends ConfigurableInfo
             $adCharge = [];
             $chargeInfo = $additionalInformation['chargeOrderResponse'];
             $statusCodeShrt = $chargeInfo['data']['transaction']['status_code'];
-            $adCharge['Status'] = $chargeInfo['results']['status'].' ('. $statusCodeShrt .')';
+            $adCharge['Status'] = $chargeInfo['results']['status'] . ' (' . $statusCodeShrt . ')';
             $adCharge['Status description'] =  $chargeInfo['results']['description'];
             $amountShrt = $chargeInfo['data']['transaction']['amount'];
             $adCharge['Amount charged'] = $priceHelper->currency($amountShrt, true, false, 'USD');
@@ -108,7 +117,7 @@ class Info extends ConfigurableInfo
             $additionalRefund = $additionalInformation['refundResponse'];
             $refundResponse = [];
             $statusCodeShrt = $additionalRefund['data']['transaction']['status_code'];
-            $refundResponse['Status'] = $additionalRefund['results']['status'].' ('. $statusCodeShrt.')';
+            $refundResponse['Status'] = $additionalRefund['results']['status'] . ' (' . $statusCodeShrt . ')';
             $refundResponse['Status description'] =  $additionalRefund['results']['description'];
             $amountShrt = $additionalRefund['data']['transaction']['amount'];
             $refundResponse['Amount refunded'] = $priceHelper->currency($amountShrt, true, false, 'USD');
@@ -118,7 +127,7 @@ class Info extends ConfigurableInfo
 
         if ($this->getArea() != 'adminhtml') {
 
-            return $transport->setData( ['Checkout page response:'=>$frontDisplayData]);
+            return $transport->setData(['Checkout page response:' => $frontDisplayData]);
         }
 
         return $transport->setData($displayData);

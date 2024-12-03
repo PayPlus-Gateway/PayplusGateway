@@ -1,8 +1,10 @@
 <?php
+
 /**
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Payplus\PayplusGateway\Model\Method;
 
 use Exception;
@@ -219,7 +221,7 @@ class Vault implements VaultPaymentInterface
     public function canAuthorize()
     {
         return $this->vaultProvider->canAuthorize()
-        && $this->vaultProvider->getConfigData(static::CAN_AUTHORIZE);
+            && $this->vaultProvider->getConfigData(static::CAN_AUTHORIZE);
     }
 
     /**
@@ -229,7 +231,7 @@ class Vault implements VaultPaymentInterface
     public function canCapture()
     {
         return $this->vaultProvider->canCapture()
-        && $this->vaultProvider->getConfigData(static::CAN_CAPTURE);
+            && $this->vaultProvider->getConfigData(static::CAN_CAPTURE);
     }
 
     /**
@@ -479,7 +481,7 @@ class Vault implements VaultPaymentInterface
         if (!$payment instanceof OrderPaymentInterface) {
             throw new \DomainException('Not implemented');
         }
-        
+
         if ($payment->getAuthorizationTransaction()) {
             throw new \DomainException('Capture can not be performed through vault');
         }
@@ -553,7 +555,7 @@ class Vault implements VaultPaymentInterface
      */
     private function attachCreditCardInfo(OrderPaymentInterface $payment): void
     {
-        
+
         $paymentToken = $payment->getExtensionAttributes()
             ->getVaultPaymentToken();
         if ($paymentToken === null) {
