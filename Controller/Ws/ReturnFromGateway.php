@@ -1,7 +1,9 @@
 <?php
 
 namespace Payplus\PayplusGateway\Controller\Ws;
+
 use Magento\Sales\Model\Order;
+
 class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiController
 {
     /**
@@ -43,12 +45,12 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
 
         $resultRedirect = $this->resultFactory->create('redirect');
         $params = $this->request->getParams();
-        $this->_logger->debugOrder('params response get',$params);
+        $this->_logger->debugOrder('params response get', $params);
         $response = $this->apiConnector->checkTransactionAgainstIPN([
             'transaction_uid' => $params['transaction_uid'],
             'payment_request_uid' => $params['page_request_uid']
         ]);
-        $this->_logger->debugOrder('ipn  payplus',$response);
+        $this->_logger->debugOrder('ipn  payplus', $response);
         if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
             $resultRedirect->setPath('checkout/onepage/failure');
             return $resultRedirect;
@@ -63,7 +65,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
         $status = $orderResponse->processResponse($params);
 
-      /*  if ($this->config->getValue(
+        /*  if ($this->config->getValue(
             'payment/payplus_gateway/payment_page/use_callback',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         ) == 0) {
@@ -83,35 +85,46 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         if ($response['results']['status'] != 'success' || $status === false) {
             $resultRedirect->setPath('checkout/onepage/failure');
         } else {
-            $type =$response['data']['type'];
+            $type = $response['data']['type'];
 
 
-            if($type=="Charge"){
-                $statusOrderPayplus=$this->config->getValue(
+            if ($type == "Charge") {
+                $statusOrderPayplus = $this->config->getValue(
                     'payment/payplus_gateway/api_configuration/status_order_payplus',
-                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                );
 
-                $stateOrderPayplus=$this->config->getValue(
+                $stateOrderPayplus = $this->config->getValue(
                     'payment/payplus_gateway/api_configuration/state_order_payplus',
-                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-                $stateOrderPayplus =($stateOrderPayplus)? $stateOrderPayplus:'complete';
-                if($statusOrderPayplus){
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                );
+
+                $statusApprovalOrderPayplus = $this->config->getValue(
+                    'payment/payplus_gateway/api_configuration/status_approval_order_payplus',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                );
+
+                $stateApprovalOrderPayplus = $this->config->getValue(
+                    'payment/payplus_gateway/api_configuration/state_approval_order_payplus',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                );
+
+                $stateOrderPayplus = ($stateOrderPayplus) ? $stateOrderPayplus : 'complete';
+                if ($statusOrderPayplus) {
 
                     $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
-                    $order->addStatusHistoryComment($statusOrderPayplus." order id :" .$params['more_info']);
+                    $order->addStatusHistoryComment($statusOrderPayplus . " order id :" . $params['more_info']);
                     $order->setState($stateOrderPayplus)->setStatus($statusOrderPayplus);
                     $order->save();
-                }else {
+                } else {
                     $statusOrder = Order::STATE_COMPLETE;
                     $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
                     $order->setState($stateOrderPayplus)->setStatus($statusOrder);
                     $order->save();
                 }
-
             }
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;
     }
-
 }
