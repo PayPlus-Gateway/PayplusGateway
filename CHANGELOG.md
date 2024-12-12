@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.3] - 2024-12-03
+
+### Fixed
+
+- Minor fix - using $order->getBillingAddres() to use the order customer data for billing and tokens.
+
 ## [1.1.2] - 2024-12-03
 
 ### Fixed
