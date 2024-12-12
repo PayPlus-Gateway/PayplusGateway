@@ -49,7 +49,7 @@ abstract class BaseOrderRequest implements BuilderInterface
         $order = $payment->getOrder();
 
         $customer = $this->customerSession->getCustomer();
-        $address = $customer->getDefaultBillingAddress();
+        $address = $order->getBillingAddress();
 
         $quote = $this->session->getQuote();
         $paymentMethod = $quote->getPayment()->getMethodInstance()->getCode();
@@ -76,9 +76,9 @@ abstract class BaseOrderRequest implements BuilderInterface
         }
         $customer = [];
         if ($quote && $address) {
-            if (method_exists($address, 'getFirstName')) {;
+            if (method_exists($address, 'getFirstName')) {
                 $customer['email'] = $quote->getCustomerEmail();
-                $customer_name = $address->getFirstName() . ' ' . $address->getLastName();
+                $customer_name = $address->getFirstname() . ' ' . $address->getLastName();
                 if (!empty($address->getCompany())) {
                     $customer_name .= " (" . $address->getCompany() . " ) ";
                 }
