@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.5] - 2025-02-10
+
+### Added
+
+- Added support for store-specific configuration for multi-store setups. If PayPlus is not enabled for a particular store ID, the email settings will not be overridden.
+
 ## [1.1.4] - 2024-12-03
 
 ### Fixed
