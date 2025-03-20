@@ -16,6 +16,7 @@ abstract class BaseOrderRequest implements BuilderInterface
     public $_logger;
     public $paymenttokenmanagement;
     public $resourceConnection;
+    public $enableCompensationProduct;
 
     public function __construct(
         \Magento\Checkout\Model\Session $session,
@@ -38,6 +39,8 @@ abstract class BaseOrderRequest implements BuilderInterface
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $config = $objectManager->get(\Magento\Framework\App\Config\ScopeConfigInterface::class);
         $scp = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
+        $this->enableCompensationProduct = $config->getValue('payment/payplus_enable_round_compensation_product/active', $scp);
+
         if (
             !isset($buildSubject['payment'])
             || !$buildSubject['payment'] instanceof PaymentDataObjectInterface
@@ -155,7 +158,7 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $itemAmount = $itemAmount * $rate;
             }
 
-            $price = $itemAmount / 100;
+            $price = round($itemAmount / 100, ROUNDING_DECIMALS);
             $totalItems += ($price * $item->getQtyOrdered());
 
             // Tax
@@ -165,11 +168,11 @@ abstract class BaseOrderRequest implements BuilderInterface
                 $vat_type = 2;
             }
             $orderDetails['items'][] = [
-                'name' => $name,
-                'price' =>  round($price, ROUNDING_DECIMALS),
-                'quantity' => $item->getQtyOrdered(),
-                'barcode' => $item->getSku(),
-                'vat_type' => $vat_type  // Tax
+                'name'      => $name,
+                'price'     =>  $price,
+                'quantity'  => $item->getQtyOrdered(),
+                'barcode'   => $item->getSku(),
+                'vat_type'  => $vat_type  // Tax
             ];
             // endif;
         }
@@ -184,11 +187,11 @@ abstract class BaseOrderRequest implements BuilderInterface
         }
         $price =    round($itemAmount, ROUNDING_DECIMALS);
         $totalItems += $price;
-        $title = ($shippingAmount) ? __('Shipping') : __('Free Shipping');
+        $title = ($shippingAmount) ? __('Shipping')->getText() : __('Free Shipping')->getText();
         $orderDetails['items'][] = [
-            'name'         => $title,
-            'price'         => $price,
-            'shipping'   => true,
+            'name'      => $title,
+            'price'     => $price,
+            'shipping'  => true,
         ];
 
         $discount = $payment->getPayment()->getOrder()->getBaseDiscountAmount();
@@ -203,23 +206,23 @@ abstract class BaseOrderRequest implements BuilderInterface
             $discount = round($discount, ROUNDING_DECIMALS);
             $totalItems += $discount;
             $orderDetails['items'][] = [
-                'name'         => __('Discount'),
-                'price'         => $discount,
-                'quantity'   => 1,
+                'name'     => __('Discount')->getText(),
+                'price'    => $discount,
+                'quantity' => 1,
             ];
         }
 
         $totalItems = round($totalItems, ROUNDING_DECIMALS);
         $orderDetails['amount'] = round($order->getGrandTotalAmount(), ROUNDING_DECIMALS);
 
-        /* if ($orderDetails['amount']!== $totalItems) {
-
+        if ($orderDetails['amount'] !== $totalItems && $this->enableCompensationProduct) {
             $orderDetails['items'][] = [
-                'name'         => __('Currency conversion rounding'),
-                'price'         => $orderDetails['amount'] - $totalItems,
-                'quantity'   => 1,
+                'name'     => __('Currency conversion rounding')->getText(),
+                'price'    => round($orderDetails['amount'] - $totalItems, ROUNDING_DECIMALS),
+                'quantity' => 1,
             ];
-        }*/
+        }
+
         $orderDetails['paying_vat'] = true;
 
         if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 0) {

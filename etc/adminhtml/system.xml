@@ -49,6 +49,11 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <config_path>payment/payplus_enable_cc_vault_always/active</config_path>
                     </field>
+                    <field id="enable_round_compensation_product" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable round compenstation product</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <config_path>payment/payplus_enable_round_compensation_product/active</config_path>
+                    </field>
                     <field id="status_order_payplus" translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Charge order status complete </label>
                         <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
