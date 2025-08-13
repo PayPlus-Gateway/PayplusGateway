@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0] - 2025-03-20
+
+### Fix
+
+- Resolved an issue where orders with multiple credit card transactions and multipass were incorrectly set to "pending" instead of "processing".
+
 ## [1.1.7] - 2025-03-20
 
 ### Added
