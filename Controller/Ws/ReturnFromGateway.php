@@ -46,12 +46,40 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         $resultRedirect = $this->resultFactory->create('redirect');
         $params = $this->request->getParams();
         $this->_logger->debugOrder('params response get', $params);
-        $response = $this->apiConnector->checkTransactionAgainstIPN([
-            'transaction_uid' => $params['transaction_uid'],
-            'payment_request_uid' => $params['page_request_uid']
-        ]);
-        $this->_logger->debugOrder('ipn  payplus', $response);
+
+        // Check if this is a multipass transaction
+        $isMultipass = isset($params['method']) && $params['method'] === 'multipass';
+        $isMultipleTransaction = isset($params['is_multiple_transaction']) &&
+            ($params['is_multiple_transaction'] === 'true' || $params['is_multiple_transaction'] === true);
+
+        if ($isMultipass || $isMultipleTransaction) {
+            $this->_logger->debugOrder('Detected multipass transaction', [
+                'method' => $params['method'] ?? 'not_set',
+                'is_multiple_transaction' => $params['is_multiple_transaction'] ?? 'not_set',
+                'transaction_uid' => $params['transaction_uid'] ?? 'not_set'
+            ]);
+        }
+
+        try {
+            $response = $this->apiConnector->checkTransactionAgainstIPN([
+                'transaction_uid' => $params['transaction_uid'],
+                'payment_request_uid' => $params['page_request_uid']
+            ]);
+            $this->_logger->debugOrder('ipn  payplus', $response);
+        } catch (\Exception $e) {
+            $this->_logger->debugOrder('IPN check failed', [
+                'error' => $e->getMessage(),
+                'transaction_uid' => $params['transaction_uid'] ?? 'not_set'
+            ]);
+            $resultRedirect->setPath('checkout/onepage/failure');
+            return $resultRedirect;
+        }
+
         if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
+            $this->_logger->debugOrder('IPN response invalid or failed', [
+                'has_data' => isset($response['data']),
+                'status_code' => $response['data']['status_code'] ?? 'not_set'
+            ]);
             $resultRedirect->setPath('checkout/onepage/failure');
             return $resultRedirect;
         }
@@ -59,11 +87,76 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         $params = $response['data'];
         $status = true;
 
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $collection = $objectManager->create(\Magento\Sales\Model\Order::class);
-        $order = $collection->loadByIncrementId($params['more_info']);
-        $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
-        $status = $orderResponse->processResponse($params);
+        try {
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $collection = $objectManager->create(\Magento\Sales\Model\Order::class);
+            $order = $collection->loadByIncrementId($params['more_info']);
+
+            if (!$order->getId()) {
+                $this->_logger->debugOrder('Order not found', [
+                    'order_increment_id' => $params['more_info'] ?? 'not_set'
+                ]);
+                $resultRedirect->setPath('checkout/onepage/failure');
+                return $resultRedirect;
+            }
+
+            $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
+            $status = $orderResponse->processResponse($params);
+
+            // Add payment response to order notes
+            try {
+                // Add formatted multipass transaction details if this is a multipass transaction
+                if (
+                    isset($params['method']) && $params['method'] === 'multipass' &&
+                    isset($params['related_transactions']) && is_array($params['related_transactions'])
+                ) {
+
+                    $multipassComment = "=== MULTIPASS TRANSACTION BREAKDOWN ===\n";
+                    $multipassComment .= "Main Transaction ID: {$params['transaction_uid']}\n";
+                    $multipassComment .= "Total Amount: {$params['amount']} {$params['currency']}\n";
+                    $multipassComment .= "Transaction Status: {$params['status']}\n\n";
+                    $multipassComment .= "Payment Methods Used:\n";
+                    $multipassComment .= "----------------------------------------\n";
+
+                    foreach ($params['related_transactions'] as $index => $txn) {
+                        $multipassComment .= ($index + 1) . ". ";
+
+                        if ($txn['method'] === 'credit-card') {
+                            $multipassComment .= "CREDIT CARD PAYMENT\n";
+                            $multipassComment .= "   Card: ****{$txn['four_digits']} ({$txn['brand_name']})\n";
+                            $multipassComment .= "   Cardholder: {$txn['card_holder_name']}\n";
+                            $multipassComment .= "   Amount: {$txn['amount']} {$txn['currency']}\n";
+                            $multipassComment .= "   Approval: {$txn['approval_num']}\n";
+                            $multipassComment .= "   Voucher: {$txn['voucher_num']}\n";
+                            $multipassComment .= "   Transaction ID: {$txn['transaction_uid']}\n";
+                        } else {
+                            $multipassComment .= "MULTIPASS WALLET PAYMENT\n";
+                            $multipassComment .= "   Method: {$txn['alternative_method_name']}\n";
+                            $multipassComment .= "   Voucher: {$txn['voucher_num']}\n";
+                            $multipassComment .= "   Amount: {$txn['amount']} {$txn['currency']}\n";
+                            $multipassComment .= "   Approval: {$txn['approval_num']}\n";
+                            $multipassComment .= "   Transaction ID: {$txn['transaction_uid']}\n";
+                        }
+
+                        $multipassComment .= "   Status: {$txn['status']}\n";
+                        $multipassComment .= "   Date: {$txn['date']}\n\n";
+                    }
+
+                    $order->addStatusHistoryComment($multipassComment);
+                }
+
+                $order->save();
+            } catch (\Exception $e) {
+                $this->_logger->debugOrder('Error adding payment response to notes', ['error' => $e->getMessage()]);
+            }
+        } catch (\Exception $e) {
+            $this->_logger->debugOrder('Error processing order response', [
+                'error' => $e->getMessage(),
+                'order_increment_id' => $params['more_info'] ?? 'not_set'
+            ]);
+            $resultRedirect->setPath('checkout/onepage/failure');
+            return $resultRedirect;
+        }
 
         /*  if ($this->config->getValue(
             'payment/payplus_gateway/payment_page/use_callback',
