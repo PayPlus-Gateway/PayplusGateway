@@ -1,6 +1,13 @@
 # Changelog
 
-## [1.2.2] - 2025-03-20
+## [1.2.3] - 2025-08-18
+
+### Tweak
+
+- Added display of payment information for orders with multiple payment methods in the order details.
+
+
+## [1.2.2] - 2025-08-17
 
 ### Fix
 
