@@ -1,11 +1,17 @@
 # Changelog
 
+## [1.2.4] - 2025-08-23
+
+### Fix
+
+- Enhanced plugin version display functionality.
+- Resolved null deprecation warnings for PHP 8.4 and later versions.
+
 ## [1.2.3] - 2025-08-18
 
 ### Tweak
 
 - Added display of payment information for orders with multiple payment methods in the order details.
-
 
 ## [1.2.2] - 2025-08-17
 
