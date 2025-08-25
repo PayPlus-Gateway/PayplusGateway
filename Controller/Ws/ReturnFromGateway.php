@@ -171,9 +171,6 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             $status = true;
         }
       */
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class)->truncate();
-        $cartObject->saveQuote();
 
         if ($response['results']['status'] != 'success' || $status === false) {
             $resultRedirect->setPath('checkout/onepage/failure');
@@ -216,6 +213,9 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                     $order->save();
                 }
             }
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class)->truncate();
+            $cartObject->saveQuote();
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;
