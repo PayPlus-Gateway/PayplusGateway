@@ -41,6 +41,10 @@ class GetRedirect implements \Magento\Framework\App\ActionInterface
         if ($quote->getId()) {
             $quote->setIsActive(1)->setReservedOrderId(null)->save();
             $_checkoutSession->replaceQuote($quote);
+
+            // Fix: update cart items count after restoring quote
+            $itemsCount = $quote->getItemsQty();
+            $resultData['cart_items_count'] = (int)$itemsCount;
         }
         $result = $this->resultJsonFactory->create();
         $payment = $order->getPayment();
@@ -51,13 +55,13 @@ class GetRedirect implements \Magento\Framework\App\ActionInterface
             $additionalInformation['awaiting_payment'] = false;
             $payment->setAdditionalInformation($additionalInformation);
             $resultData['status'] = 'success';
-            $resultData['redirectUrl'] = $this->apiConnector->getPaymentAddress(). '/' .$paymentData['additional_data'];
+            $resultData['redirectUrl'] = $this->apiConnector->getPaymentAddress() . '/' . $paymentData['additional_data'];
         } else {
             $resultData['status'] = 'failure';
         }
-        
+
         $payment->setIsTransactionClosed(false);
-        
+
         $order->setStatus('pending_payment');
         $order->setState('pending_payment');
         $order->save();
