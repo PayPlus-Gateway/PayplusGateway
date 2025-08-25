@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.6] - 2025-08-25
+
+### Fix
+
+- Fixed issue where the cart was emptied prematurely.
+
 ## [1.2.5] - 2025-08-23
 
 ### Fix
