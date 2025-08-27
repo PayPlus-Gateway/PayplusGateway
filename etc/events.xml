@@ -10,6 +10,15 @@
     <event name="payment_method_assign_data">
         <observer name="payplus_gateway_data_assign" instance="Payplus\PayplusGateway\Observer\DataAssignObserver" />
     </event>
+    <event name="sales_model_service_quote_submit_before">
+        <observer name="payplus_before_place_order" instance="Payplus\PayplusGateway\Observer\BeforePlaceOrder" />
+    </event>
+    <event name="checkout_onepage_controller_success_action">
+        <observer name="payplus_cleanup_abandoned_orders" instance="Payplus\PayplusGateway\Observer\CleanupAbandonedOrders" />
+    </event>
+    <event name="checkout_cart_index">
+        <observer name="payplus_cleanup_abandoned_orders_cart" instance="Payplus\PayplusGateway\Observer\CleanupAbandonedOrders" />
+    </event>
     <event name="sales_order_place_after">
         <observer name="payplus_sales_order_place_after" instance="Payplus\PayplusGateway\Observer\AfterPlaceOrder"  />
     </event> 
