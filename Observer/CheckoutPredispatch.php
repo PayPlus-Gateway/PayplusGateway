@@ -10,6 +10,8 @@ use Magento\Sales\Model\Order;
 use Magento\SalesRule\Model\Coupon;
 use Magento\SalesRule\Model\ResourceModel\Coupon\CollectionFactory as CouponCollectionFactory;
 use Psr\Log\LoggerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\ScopeInterface;
 
 class CheckoutPredispatch implements ObserverInterface
 {
@@ -43,13 +45,19 @@ class CheckoutPredispatch implements ObserverInterface
      */
     protected $timezone;
 
+    /**
+     * @var ScopeConfigInterface
+     */
+    protected $scopeConfig;
+
     public function __construct(
         CustomerSession $customerSession,
         OrderCollectionFactory $orderCollectionFactory,
         CouponCollectionFactory $couponCollectionFactory,
         LoggerInterface $logger,
         \Magento\Framework\Stdlib\DateTime\DateTime $dateTime,
-        \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone
+        \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone,
+        ScopeConfigInterface $scopeConfig
     ) {
         $this->customerSession = $customerSession;
         $this->orderCollectionFactory = $orderCollectionFactory;
@@ -57,6 +65,7 @@ class CheckoutPredispatch implements ObserverInterface
         $this->logger = $logger;
         $this->dateTime = $dateTime;
         $this->timezone = $timezone;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -68,6 +77,11 @@ class CheckoutPredispatch implements ObserverInterface
     public function execute(Observer $observer)
     {
         try {
+            // Check if the feature is enabled in configuration
+            if (!$this->isFeatureEnabled()) {
+                return;
+            }
+
             // Only process for logged-in customers
             if (!$this->customerSession->isLoggedIn()) {
                 return;
@@ -78,6 +92,19 @@ class CheckoutPredispatch implements ObserverInterface
         } catch (\Exception $e) {
             $this->logger->error('PayPlus Gateway - Error in CheckoutPredispatch observer: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Check if the pending order cancellation feature is enabled
+     *
+     * @return bool
+     */
+    protected function isFeatureEnabled()
+    {
+        return $this->scopeConfig->isSetFlag(
+            'payment/payplus_gateway/orders_config/cancel_pending_orders_with_coupons',
+            ScopeInterface::SCOPE_STORE
+        );
     }
 
     /**
