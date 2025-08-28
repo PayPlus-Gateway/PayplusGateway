@@ -77,9 +77,12 @@ class CheckoutPredispatch implements ObserverInterface
     public function execute(Observer $observer)
     {
         try {
-            // Check if the feature is enabled in configuration
-            if (!$this->isFeatureEnabled()) {
-                return;
+            // Check if at least one feature is enabled
+            $orderCancellationEnabled = $this->isOrderCancellationEnabled();
+            $couponRestorationEnabled = $this->isCouponRestorationEnabled();
+
+            if (!$orderCancellationEnabled && !$couponRestorationEnabled) {
+                return; // Both features disabled, nothing to do
             }
 
             // Only process for logged-in customers
@@ -88,52 +91,82 @@ class CheckoutPredispatch implements ObserverInterface
             }
 
             $customerId = $this->customerSession->getCustomerId();
-            $this->processPendingOrdersWithCoupons($customerId);
+            $this->processPendingOrders($customerId, $orderCancellationEnabled, $couponRestorationEnabled);
         } catch (\Exception $e) {
             $this->logger->error('PayPlus Gateway - Error in CheckoutPredispatch observer: ' . $e->getMessage());
         }
     }
 
     /**
-     * Check if the pending order cancellation feature is enabled
+     * Check if order cancellation is enabled
      *
      * @return bool
      */
-    protected function isFeatureEnabled()
+    protected function isOrderCancellationEnabled()
     {
         return $this->scopeConfig->isSetFlag(
-            'payment/payplus_gateway/orders_config/cancel_pending_orders_with_coupons',
+            'payment/payplus_gateway/orders_config/cancel_pending_orders',
             ScopeInterface::SCOPE_STORE
         );
     }
 
     /**
-     * Process pending orders with coupons for the current customer
+     * Check if coupon restoration is enabled
+     *
+     * @return bool
+     */
+    protected function isCouponRestorationEnabled()
+    {
+        return $this->scopeConfig->isSetFlag(
+            'payment/payplus_gateway/orders_config/restore_coupon_usage',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Process pending orders for the current customer
      *
      * @param int $customerId
+     * @param bool $cancelOrders
+     * @param bool $restoreCoupons
      * @return void
      */
-    protected function processPendingOrdersWithCoupons($customerId)
+    protected function processPendingOrders($customerId, $cancelOrders, $restoreCoupons)
     {
         // Get today's date range in store timezone
         $todayStart = $this->timezone->date()->setTime(0, 0, 0)->format('Y-m-d H:i:s');
         $todayEnd = $this->timezone->date()->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
-        // Find pending orders from today for this customer
+        // Find all pending orders from today for this customer
         $orderCollection = $this->orderCollectionFactory->create();
         $orderCollection->addFieldToFilter('customer_id', $customerId)
             ->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT)
             ->addFieldToFilter('status', 'pending_payment')
             ->addFieldToFilter('created_at', ['gteq' => $todayStart])
-            ->addFieldToFilter('created_at', ['lteq' => $todayEnd])
-            ->addFieldToFilter('coupon_code', ['notnull' => true])
-            ->addFieldToFilter('coupon_code', ['neq' => '']);
+            ->addFieldToFilter('created_at', ['lteq' => $todayEnd]);
 
         foreach ($orderCollection as $order) {
             $couponCode = $order->getCouponCode();
-            if ($couponCode) {
+            $hasCoupon = !empty($couponCode);
+
+            // Handle coupon restoration (can work independently)
+            if ($hasCoupon && $restoreCoupons) {
                 $this->restoreCouponUsage($couponCode, $order);
-                $this->cancelOrder($order);
+            }
+
+            // Handle order cancellation (can work independently)
+            if ($cancelOrders) {
+                $this->cancelOrder($order, $hasCoupon, $restoreCoupons);
+            } elseif ($hasCoupon && $restoreCoupons) {
+                // If only coupon restoration is enabled, just log the action
+                $this->logger->info(
+                    'PayPlus Gateway - Restored coupon usage without canceling order',
+                    [
+                        'order_id' => $order->getId(),
+                        'coupon_code' => $couponCode,
+                        'customer_id' => $order->getCustomerId()
+                    ]
+                );
             }
         }
     }
@@ -184,28 +217,38 @@ class CheckoutPredispatch implements ObserverInterface
      * Cancel the order
      *
      * @param Order $order
+     * @param bool $hasCoupon
+     * @param bool $couponWasRestored
      * @return void
      */
-    protected function cancelOrder($order)
+    protected function cancelOrder($order, $hasCoupon = false, $couponWasRestored = false)
     {
         try {
             if ($order->canCancel()) {
                 $order->cancel();
-                $order->addCommentToStatusHistory(
-                    'Order cancelled automatically due to new checkout session with same coupon.',
-                    false,
-                    false
-                );
+
+                if ($hasCoupon && $couponWasRestored) {
+                    $comment = 'Order cancelled automatically due to new checkout session. Coupon usage was restored.';
+                } elseif ($hasCoupon) {
+                    $comment = 'Order cancelled automatically due to new checkout session. Coupon was not restored (feature disabled).';
+                } else {
+                    $comment = 'Order cancelled automatically due to new checkout session.';
+                }
+
+                $order->addCommentToStatusHistory($comment, false, false);
                 $order->save();
 
-                $this->logger->info(
-                    'PayPlus Gateway - Cancelled pending order with coupon',
-                    [
-                        'order_id' => $order->getId(),
-                        'coupon_code' => $order->getCouponCode(),
-                        'customer_id' => $order->getCustomerId()
-                    ]
-                );
+                $logMessage = $hasCoupon
+                    ? 'PayPlus Gateway - Cancelled pending order with coupon'
+                    : 'PayPlus Gateway - Cancelled pending order';
+
+                $this->logger->info($logMessage, [
+                    'order_id' => $order->getId(),
+                    'coupon_code' => $order->getCouponCode(),
+                    'customer_id' => $order->getCustomerId(),
+                    'had_coupon' => $hasCoupon,
+                    'coupon_restored' => $couponWasRestored
+                ]);
             }
         } catch (\Exception $e) {
             $this->logger->error(
