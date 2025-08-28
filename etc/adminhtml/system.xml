@@ -175,11 +175,6 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <frontend_model>Payplus\PayplusGateway\Block\System\Config\Form\Field\Disable</frontend_model>
                     </field>
-                    <field id="auto_cancel_pending_orders" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Auto-cancel pending orders</label>
-                        <comment>Automatically cancel previous pending PayPlus orders when customer starts a new payment process. This helps prevent stock reservation issues and coupon conflicts.</comment>
-                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    </field>
                 </group>
                 <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
