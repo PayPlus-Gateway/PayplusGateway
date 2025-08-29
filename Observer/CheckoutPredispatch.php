@@ -172,7 +172,7 @@ class CheckoutPredispatch implements ObserverInterface
     }
 
     /**
-     * Restore coupon usage by decrementing the times_used counter
+     * Restore coupon usage by properly handling both global and per-customer limits
      *
      * @param string $couponCode
      * @param Order $order
@@ -181,26 +181,72 @@ class CheckoutPredispatch implements ObserverInterface
     protected function restoreCouponUsage($couponCode, $order)
     {
         try {
+            // Get the coupon
             $couponCollection = $this->couponCollectionFactory->create();
             $couponCollection->addFieldToFilter('code', $couponCode);
 
             $coupon = $couponCollection->getFirstItem();
-            if ($coupon && $coupon->getId()) {
-                $currentUsage = $coupon->getTimesUsed();
-                if ($currentUsage > 0) {
-                    $coupon->setTimesUsed($currentUsage - 1);
-                    $coupon->save();
+            if (!$coupon || !$coupon->getId()) {
+                $this->logger->warning('PayPlus Gateway - Coupon not found for restoration', [
+                    'coupon_code' => $couponCode,
+                    'order_id' => $order->getId()
+                ]);
+                return;
+            }
 
-                    $this->logger->info(
-                        'PayPlus Gateway - Restored coupon usage',
-                        [
-                            'coupon_code' => $couponCode,
-                            'order_id' => $order->getId(),
-                            'previous_usage' => $currentUsage,
-                            'new_usage' => $currentUsage - 1
-                        ]
-                    );
-                }
+            $customerId = $order->getCustomerId();
+            $currentGlobalUsage = $coupon->getTimesUsed();
+
+            // Get the sales rule to check usage limits
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $salesRule = $objectManager->create(\Magento\SalesRule\Model\Rule::class)->load($coupon->getRuleId());
+
+            $globalUsageLimit = $coupon->getUsageLimit();
+            $perCustomerLimit = $coupon->getUsageLimitPerCustomer();
+
+            // Check if this customer actually used this coupon
+            $customerUsageCount = $this->getCustomerCouponUsage($couponCode, $customerId, $order->getId());
+
+            $restorationActions = [];
+
+            // Restore global usage if applicable
+            if ($currentGlobalUsage > 0) {
+                $coupon->setTimesUsed($currentGlobalUsage - 1);
+                $restorationActions[] = "Global usage: {$currentGlobalUsage} → " . ($currentGlobalUsage - 1);
+            }
+
+            // Restore per-customer usage if applicable
+            if ($customerId && $customerUsageCount > 0) {
+                $this->restoreCustomerCouponUsage($couponCode, $customerId, $order->getId());
+                $restorationActions[] = "Customer usage restored for customer {$customerId}";
+            }
+
+            if (!empty($restorationActions)) {
+                $coupon->save();
+
+                $this->logger->info(
+                    'PayPlus Gateway - Properly restored coupon usage',
+                    [
+                        'coupon_code' => $couponCode,
+                        'order_id' => $order->getId(),
+                        'customer_id' => $customerId,
+                        'actions' => $restorationActions,
+                        'global_limit' => $globalUsageLimit ?: 'Unlimited',
+                        'per_customer_limit' => $perCustomerLimit ?: 'Unlimited',
+                        'previous_global_usage' => $currentGlobalUsage,
+                        'new_global_usage' => $currentGlobalUsage > 0 ? $currentGlobalUsage - 1 : 0
+                    ]
+                );
+            } else {
+                $this->logger->info(
+                    'PayPlus Gateway - No coupon usage to restore',
+                    [
+                        'coupon_code' => $couponCode,
+                        'order_id' => $order->getId(),
+                        'customer_id' => $customerId,
+                        'reason' => 'Coupon was not actually used or already at zero usage'
+                    ]
+                );
             }
         } catch (\Exception $e) {
             $this->logger->error(
@@ -208,6 +254,116 @@ class CheckoutPredispatch implements ObserverInterface
                 [
                     'coupon_code' => $couponCode,
                     'order_id' => $order->getId()
+                ]
+            );
+        }
+    }
+
+    /**
+     * Get customer's usage count for a specific coupon
+     *
+     * @param string $couponCode
+     * @param int $customerId
+     * @param int $excludeOrderId
+     * @return int
+     */
+    protected function getCustomerCouponUsage($couponCode, $customerId, $excludeOrderId = null)
+    {
+        if (!$customerId) {
+            return 0;
+        }
+
+        try {
+            $orderCollection = $this->orderCollectionFactory->create();
+            $orderCollection->addFieldToFilter('customer_id', $customerId)
+                ->addFieldToFilter('coupon_code', $couponCode)
+                ->addFieldToFilter('state', ['in' => [
+                    \Magento\Sales\Model\Order::STATE_PROCESSING,
+                    \Magento\Sales\Model\Order::STATE_COMPLETE,
+                    \Magento\Sales\Model\Order::STATE_CLOSED
+                ]]);
+
+            if ($excludeOrderId) {
+                $orderCollection->addFieldToFilter('entity_id', ['neq' => $excludeOrderId]);
+            }
+
+            return $orderCollection->getSize();
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'PayPlus Gateway - Error checking customer coupon usage: ' . $e->getMessage(),
+                [
+                    'coupon_code' => $couponCode,
+                    'customer_id' => $customerId
+                ]
+            );
+            return 0;
+        }
+    }
+
+    /**
+     * Restore customer-specific coupon usage (for per-customer limits)
+     *
+     * @param string $couponCode
+     * @param int $customerId
+     * @param int $orderIdToRestore
+     * @return void
+     */
+    protected function restoreCustomerCouponUsage($couponCode, $customerId, $orderIdToRestore)
+    {
+        try {
+            // Magento tracks per-customer usage in the salesrule_customer table
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $resource = $objectManager->get(\Magento\Framework\App\ResourceConnection::class);
+            $connection = $resource->getConnection();
+
+            // Get the coupon
+            $couponCollection = $this->couponCollectionFactory->create();
+            $couponCollection->addFieldToFilter('code', $couponCode);
+            $coupon = $couponCollection->getFirstItem();
+
+            if (!$coupon || !$coupon->getId()) {
+                return;
+            }
+
+            $ruleId = $coupon->getRuleId();
+
+            // Check if there's a customer usage record
+            $customerTable = $resource->getTableName('salesrule_customer');
+            $select = $connection->select()
+                ->from($customerTable)
+                ->where('rule_id = ?', $ruleId)
+                ->where('customer_id = ?', $customerId);
+
+            $customerUsageRecord = $connection->fetchRow($select);
+
+            if ($customerUsageRecord && $customerUsageRecord['times_used'] > 0) {
+                // Decrement the customer's usage count
+                $connection->update(
+                    $customerTable,
+                    ['times_used' => $customerUsageRecord['times_used'] - 1],
+                    [
+                        'rule_id = ?' => $ruleId,
+                        'customer_id = ?' => $customerId
+                    ]
+                );
+
+                $this->logger->info(
+                    'PayPlus Gateway - Restored customer coupon usage record',
+                    [
+                        'coupon_code' => $couponCode,
+                        'customer_id' => $customerId,
+                        'rule_id' => $ruleId,
+                        'previous_customer_usage' => $customerUsageRecord['times_used'],
+                        'new_customer_usage' => $customerUsageRecord['times_used'] - 1
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'PayPlus Gateway - Error restoring customer coupon usage: ' . $e->getMessage(),
+                [
+                    'coupon_code' => $couponCode,
+                    'customer_id' => $customerId
                 ]
             );
         }
