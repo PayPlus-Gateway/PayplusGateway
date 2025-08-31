@@ -383,6 +383,19 @@ class CheckoutPredispatch implements ObserverInterface
             if ($order->canCancel()) {
                 $order->cancel();
 
+                // Automatically return stock for each item in the cancelled order
+                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+                $stockRegistry = $objectManager->get(\Magento\CatalogInventory\Api\StockRegistryInterface::class);
+
+                foreach ($order->getAllItems() as $item) {
+                    $productId = $item->getProductId();
+                    $qty = $item->getQtyOrdered();
+                    $stockItem = $stockRegistry->getStockItem($productId, $order->getStore()->getWebsiteId());
+                    $stockItem->setQty($stockItem->getQty() + $qty);
+                    $stockItem->setIsInStock(true);
+                    $stockRegistry->updateStockItemBySku($item->getSku(), $stockItem);
+                }
+
                 if ($hasCoupon && $couponWasRestored) {
                     $comment = 'Order cancelled automatically due to new checkout session. Coupon usage was restored.';
                 } elseif ($hasCoupon) {
