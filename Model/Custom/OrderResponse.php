@@ -56,7 +56,7 @@ class OrderResponse
         $status = false;
 
         // Check if this is a multipass transaction
-        $isMultipass = isset($params['method']) && $params['method'] === 'multipass';
+        $isMultipass = isset($params['method']) && strtolower($params['method']) === 'multipass';
         $isMultipleTransaction = isset($params['is_multiple_transaction']) &&
             ($params['is_multiple_transaction'] === true || $params['is_multiple_transaction'] === 'true');
 
@@ -122,7 +122,16 @@ class OrderResponse
             $transactionSummary .= "Amount: " . $params['amount'] . " " . ($params['currency'] ?? 'ILS') . "\n";
             $transactionSummary .= "Status: " . $params['status'] . " (" . $params['status_code'] . ")";
 
+            // Add brand code if available
+            if (isset($params['brand_code']) && !empty($params['brand_code'])) {
+                $transactionSummary .= "\nBrand Code: " . $params['brand_code'];
+            }
+
             $this->order->addStatusHistoryComment($transactionSummary);
+
+            // Debug: Add full response for troubleshooting
+            // $debugComment = "=== DEBUG: Full Response Data ===\n" . print_r($params, true);
+            // $this->order->addStatusHistoryComment($debugComment);
         }
 
         // Token handling - only for credit card transactions with required fields

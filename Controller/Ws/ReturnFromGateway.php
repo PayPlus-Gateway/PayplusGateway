@@ -123,7 +123,8 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
 
                         if ($txn['method'] === 'credit-card') {
                             $multipassComment .= "CREDIT CARD PAYMENT\n";
-                            $multipassComment .= "   Card: ****{$txn['four_digits']} ({$txn['brand_name']})\n";
+                            $brandInfo = isset($txn['brand_code']) ? "{$txn['brand_name']} - {$txn['brand_code']}" : $txn['brand_name'];
+                            $multipassComment .= "   Card: ****{$txn['four_digits']} ({$brandInfo})\n";
                             $multipassComment .= "   Cardholder: {$txn['card_holder_name']}\n";
                             $multipassComment .= "   Amount: {$txn['amount']} {$txn['currency']}\n";
                             $multipassComment .= "   Approval: {$txn['approval_num']}\n";
@@ -131,7 +132,8 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
                             $multipassComment .= "   Transaction ID: {$txn['transaction_uid']}\n";
                         } else {
                             $multipassComment .= "MULTIPASS WALLET PAYMENT\n";
-                            $multipassComment .= "   Method: {$txn['alternative_method_name']}\n";
+                            $methodInfo = isset($txn['brand_code']) ? "{$txn['alternative_method_name']} - Brand Code:{$txn['brand_code']}" : $txn['alternative_method_name'];
+                            $multipassComment .= "   Method: {$methodInfo}\n";
                             $multipassComment .= "   Voucher: {$txn['voucher_num']}\n";
                             $multipassComment .= "   Amount: {$txn['amount']} {$txn['currency']}\n";
                             $multipassComment .= "   Approval: {$txn['approval_num']}\n";
