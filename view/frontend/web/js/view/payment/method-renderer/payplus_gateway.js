@@ -12,6 +12,7 @@ define(
         'mage/url',
         'Magento_Vault/js/view/payment/vault-enabler',
         'Magento_Checkout/js/view/payment/default',
+        'mage/translate'
     ],
 
     function (
@@ -20,7 +21,8 @@ define(
         ko,
         url,
         VaultEnabler,
-        Component
+        Component,
+        $t
     ) {
 
         'use strict';
@@ -141,7 +143,7 @@ define(
             afterPlaceOrder: function (Response) {
 
                 if (isNaN(Response)) {
-                    alert('Error processing your request');
+                    alert($t('Error processing your request'));
                     return false;
                 }
                 $.ajax({
@@ -152,11 +154,179 @@ define(
                         if (Response.status == 'success' && Response.redirectUrl) {
                             if (window.checkoutConfig.payment.payplus_gateway.form_type == 'iframe') {
                                 this.getIframeURL(Response.redirectUrl);
+                            } else if (window.checkoutConfig.payment.payplus_gateway.form_type == 'iframe_inline') {
+                                this.showFullScreenIframe(Response.redirectUrl);
                             } else {
                                 window.location.replace(Response.redirectUrl);
                             }
                         } else {
-                            alert("Error."); // for now
+                            alert($t("Error.")); // for now
+                        }
+                    }
+                });
+            },
+
+            showFullScreenIframe: function(paymentUrl) {
+                // Get header height to position iframe below it
+                var headerHeight = 0;
+                var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
+                if (header.length > 0) {
+                    headerHeight = header.outerHeight();
+                }
+
+                // Calculate available height (viewport height minus header)
+                var availableHeight = $(window).height() - headerHeight;
+
+                // Create full-width overlay starting after header
+                var overlay = $('<div>', {
+                    id: 'payplus-fullscreen-overlay',
+                    css: {
+                        position: 'fixed',
+                        top: headerHeight + 'px',
+                        left: 0,
+                        width: '100%',
+                        height: availableHeight + 'px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        zIndex: 10000,
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }
+                });
+
+                // Create header bar with close button
+                var headerBar = $('<div>', {
+                    css: {
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '15px 20px',
+                        backgroundColor: '#fff',
+                        borderBottom: '1px solid #ddd'
+                    }
+                });
+
+                var title = $('<h3>', {
+                    text: $t('Complete Your Payment'),
+                    css: {
+                        margin: 0,
+                        fontSize: '18px',
+                        color: '#333'
+                    }
+                });
+
+                // Create close button
+                var closeButton = $('<button>', {
+                    text: $t('Close'),
+                    css: {
+                        background: '#f5f5f5',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        padding: '8px 15px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        color: '#666'
+                    },
+                    hover: function() {
+                        $(this).css('backgroundColor', '#e9e9e9');
+                    },
+                    click: function() {
+                        overlay.remove();
+                        // Optionally redirect back to cart
+                        window.location.href = url.build('checkout/cart');
+                    }
+                });
+
+                headerBar.append(title, closeButton);
+
+                // Create iframe container (takes remaining space)
+                var iframeContainer = $('<div>', {
+                    css: {
+                        flex: '1',
+                        position: 'relative',
+                        backgroundColor: '#fff'
+                    }
+                });
+
+                // Create loading indicator
+                var loadingIndicator = $('<div>', {
+                    html: '<div style="text-align: center; padding: 50px;"><div style="display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #007bdb; border-radius: 50%; animation: spin 1s linear infinite;"></div><p style="margin-top: 15px; color: #666; font-size: 16px;">' + $t('Loading payment form...') + '</p></div>',
+                    css: {
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#fff'
+                    }
+                });
+
+                // Add CSS animation for loading spinner
+                if (!$('#payplus-spinner-css').length) {
+                    $('<style id="payplus-spinner-css">@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>').appendTo('head');
+                }
+
+                // Create iframe
+                var iframe = $('<iframe>', {
+                    src: paymentUrl,
+                    css: {
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        display: 'none'
+                    },
+                    load: function() {
+                        loadingIndicator.hide();
+                        $(this).show();
+                    }
+                });
+
+                // Assemble the overlay
+                iframeContainer.append(loadingIndicator, iframe);
+                overlay.append(headerBar, iframeContainer);
+                
+                // Add to body
+                $('body').append(overlay);
+
+                // Hide checkout content
+                $('.checkout-container, .page-main').hide();
+
+                // Handle window resize to maintain proper positioning
+                $(window).on('resize.payplus', function() {
+                    var newHeaderHeight = 0;
+                    var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
+                    if (header.length > 0) {
+                        newHeaderHeight = header.outerHeight();
+                    }
+                    var newAvailableHeight = $(window).height() - newHeaderHeight;
+                    
+                    overlay.css({
+                        top: newHeaderHeight + 'px',
+                        height: newAvailableHeight + 'px'
+                    });
+                });
+
+                // Listen for payment completion messages
+                $(window).on('message.payplus', function(event) {
+                    var data = event.originalEvent.data;
+                    if (data && data.payplus) {
+                        // Cleanup
+                        overlay.remove();
+                        $(window).off('resize.payplus message.payplus');
+                        $('.checkout-container, .page-main').show();
+                        
+                        switch(data.status) {
+                            case 'success':
+                                window.location.href = url.build('checkout/onepage/success');
+                                break;
+                            case 'failure':
+                                window.location.href = url.build('checkout/onepage/failure');
+                                break;
+                            case 'cancel':
+                                window.location.href = url.build('checkout/cart');
+                                break;
                         }
                     }
                 });
