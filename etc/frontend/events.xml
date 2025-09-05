@@ -7,7 +7,7 @@
 -->
 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <event name="controller_action_predispatch_checkout_index_index">
+    <event name="controller_action_predispatch_onestepcheckout_index_index">
         <observer name="payplus_gateway_checkout_predispatch" instance="Payplus\PayplusGateway\Observer\CheckoutPredispatch" />
     </event>
 </config>
