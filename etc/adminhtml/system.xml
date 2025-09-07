@@ -178,12 +178,12 @@
                     <field id="cancel_pending_orders" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Cancel pending orders when customer enters checkout</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout again. This prevents duplicate orders. Currently supported by event "controller_action_predispatch_checkout_index_index" only.</comment>
+                        <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout again. This prevents duplicate orders. Currently supported by event "controller_action_predispatch_onestepcheckout_index_index" only.</comment>
                     </field>
                     <field id="restore_coupon_usage" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Restore coupon usage when canceling pending orders</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <comment>When enabled, automatically restores coupon usage counts for pending orders with coupons. Can work independently or together with order cancellation. Currently supported by event "controller_action_predispatch_checkout_index_index" only.</comment>
+                        <comment>When enabled, automatically restores coupon usage counts for pending orders with coupons. Can work independently or together with order cancellation. Currently supported by event "controller_action_predispatch_onestepcheckout_index_index" only.</comment>
                     </field>
                 </group>
                 <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
