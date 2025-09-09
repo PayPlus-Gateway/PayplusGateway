@@ -93,6 +93,11 @@
                             <field id="iframe_or_redirect">iframe</field>
                         </depends>
                     </field>
+                    <field id="display_payment_info_hebrew" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Display payment information in Hebrew</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, payment details will be displayed in Hebrew regardless of locale</comment>
+                    </field>
                 </group>
                 <group id="payment_page" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>

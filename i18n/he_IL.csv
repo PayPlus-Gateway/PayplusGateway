@@ -38,4 +38,20 @@
 "Approval number", "מספר אישור",
 "Status description", "סטטוס",
 "Expiry", "תוקף כרטיס",
-"Checkout page response:", "פרטי עסקה"
+"Subsequent payments","תשלומים נוספים"
+"Token","טוקן"
+"More info","מידע נוסף"
+"Alternative name","שם חלופי"
+"Identification card number","מספר תעודת זהות"
+"Brand name","שם מותג"
+"Url Invoice","קישור חשבונית"
+"Checkout page response","מענה מעמוד התשלום"
+"Amount %1","סכום %1"
+"Amount charged","סכום שחויב"
+"Capture response","מענה לכידה"
+"Amount refunded","סכום שהוחזר"
+"Refund Response","מענה החזר"
+"authorized","מורשה"
+"charged","חויב"
+"Display payment information in Hebrew","הצג מידע תשלום בעברית"
+"When enabled, payment details will be displayed in Hebrew regardless of locale","כאשר מופעל, פרטי התשלום יוצגו בעברית בלי קשר לשפת האתר"
