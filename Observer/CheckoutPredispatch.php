@@ -62,6 +62,11 @@ class CheckoutPredispatch implements ObserverInterface
      */
     protected $scopeConfig;
 
+    /**
+     * @var \Magento\Customer\Model\Session
+     */
+    protected $sessionManager;
+
     public function __construct(
         CustomerSession $customerSession,
         CheckoutSession $checkoutSession,
@@ -71,7 +76,8 @@ class CheckoutPredispatch implements ObserverInterface
         LoggerInterface $logger,
         \Magento\Framework\Stdlib\DateTime\DateTime $dateTime,
         \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        \Magento\Customer\Model\Session $sessionManager
     ) {
         $this->customerSession = $customerSession;
         $this->checkoutSession = $checkoutSession;
@@ -82,6 +88,7 @@ class CheckoutPredispatch implements ObserverInterface
         $this->dateTime = $dateTime;
         $this->timezone = $timezone;
         $this->scopeConfig = $scopeConfig;
+        $this->sessionManager = $sessionManager;
     }
 
     /**
@@ -93,24 +100,52 @@ class CheckoutPredispatch implements ObserverInterface
     public function execute(Observer $observer)
     {
         try {
+            // Get current page information from observer
+            $currentPage = $this->getCurrentPageType($observer);
+            
+            $this->logger->info('PayPlus Gateway Observer - Page accessed: ' . $currentPage);
+
             // Check if at least one feature is enabled
             $orderCancellationEnabled = $this->isOrderCancellationEnabled();
             $couponRestorationEnabled = $this->isCouponRestorationEnabled();
 
             if (!$orderCancellationEnabled && !$couponRestorationEnabled) {
+                $this->logger->info('PayPlus Gateway Observer - Order cancellation and coupon restoration both disabled');
                 return;
             }
 
             // Get current customer identifier (ID for logged in, email for guest)
             $customerIdentifier = $this->getCurrentCustomerIdentifier();
             if (!$customerIdentifier) {
+                $this->logger->info('PayPlus Gateway Observer - No customer identifier found, skipping order processing');
                 return;
             }
 
-            $this->processPendingOrders($customerIdentifier, $orderCancellationEnabled, $couponRestorationEnabled);
+            // Process orders with duplicate prevention
+            $this->processPendingOrders($customerIdentifier, $orderCancellationEnabled, $couponRestorationEnabled, $currentPage);
         } catch (\Exception $e) {
             $this->logger->error('PayPlus Gateway - Error in CheckoutPredispatch observer: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get current page type from event name
+     *
+     * @param string $eventName
+     * @return string
+     */
+    protected function getCurrentPageType($observer)
+    {
+        // Get the event name to determine page type
+        $eventName = $observer->getEvent()->getName();
+        
+        if ($eventName === 'controller_action_predispatch_checkout_cart_index') {
+            return 'cart';
+        } elseif ($eventName === 'controller_action_predispatch_checkout_index_index') {
+            return 'checkout';
+        }
+        
+        return 'unknown';
     }
 
     /**
@@ -174,10 +209,23 @@ class CheckoutPredispatch implements ObserverInterface
      * @param array $customerIdentifier
      * @param bool $cancelOrders
      * @param bool $restoreCoupons
+     * @param string $currentPage
      * @return void
      */
-    protected function processPendingOrders($customerIdentifier, $cancelOrders, $restoreCoupons)
+    protected function processPendingOrders($customerIdentifier, $cancelOrders, $restoreCoupons, $currentPage = 'unknown')
     {
+        // Get session key for tracking processed orders
+        $sessionKey = 'payplus_processed_orders_' . $customerIdentifier['type'] . '_' . md5($customerIdentifier['value']);
+        $processedOrders = $this->sessionManager->getData($sessionKey) ?: [];
+        $processedInThisSession = [];
+        
+        $this->logger->info('PayPlus Gateway - Processing orders', [
+            'customer_type' => $customerIdentifier['type'],
+            'customer_identifier' => $customerIdentifier['value'],
+            'current_page' => $currentPage,
+            'processed_orders_count' => count($processedOrders)
+        ]);
+
         // Get today's date range in store timezone
         $todayStart = $this->timezone->date()->setTime(0, 0, 0)->format('Y-m-d H:i:s');
         $todayEnd = $this->timezone->date()->setTime(23, 59, 59)->format('Y-m-d H:i:s');
@@ -199,9 +247,26 @@ class CheckoutPredispatch implements ObserverInterface
             ->addFieldToFilter('created_at', ['gteq' => $todayStart])
             ->addFieldToFilter('created_at', ['lteq' => $todayEnd]);
 
+        $processedInThisSession = [];
+        
         foreach ($orderCollection as $order) {
+            $orderId = $order->getId();
+            
+            // Skip if this order was already processed in this session
+            if (in_array($orderId, $processedOrders)) {
+                $this->logger->info('PayPlus Gateway - Order already processed in session: ' . $orderId);
+                continue;
+            }
+
             $couponCode = $order->getCouponCode();
             $hasCoupon = !empty($couponCode);
+            
+            $this->logger->info('PayPlus Gateway - Processing order', [
+                'order_id' => $orderId,
+                'has_coupon' => $hasCoupon,
+                'coupon_code' => $couponCode,
+                'page' => $currentPage
+            ]);
 
             // Handle coupon restoration (can work independently)
             if ($hasCoupon && $restoreCoupons) {
@@ -216,6 +281,21 @@ class CheckoutPredispatch implements ObserverInterface
                 $order->addCommentToStatusHistory('Coupon usage restored by PayPlus Gateway', false);
                 $order->save();
             }
+            
+            // Mark order as processed
+            $processedInThisSession[] = $orderId;
+        }
+        
+        // Update session with newly processed orders
+        if (!empty($processedInThisSession)) {
+            $allProcessedOrders = array_unique(array_merge($processedOrders, $processedInThisSession));
+            $this->sessionManager->setData($sessionKey, $allProcessedOrders);
+            
+            $this->logger->info('PayPlus Gateway - Updated session with processed orders', [
+                'newly_processed' => count($processedInThisSession),
+                'total_processed' => count($allProcessedOrders),
+                'page' => $currentPage
+            ]);
         }
     }
 
