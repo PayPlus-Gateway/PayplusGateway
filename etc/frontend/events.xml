@@ -15,4 +15,7 @@
     <event name="controller_action_predispatch_onestepcheckout_index_index">
         <observer name="payplus_gateway_checkout_predispatch" instance="Payplus\PayplusGateway\Observer\CheckoutPredispatch" />
     </event>
+    <event name="sales_quote_save_before">
+        <observer name="payplus_gateway_quote_save_before" instance="Payplus\PayplusGateway\Observer\CheckoutPredispatch" />
+    </event>
 </config>

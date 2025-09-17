@@ -7,13 +7,11 @@ use Magento\Framework\Event\Observer;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 use Magento\Sales\Model\Order;
-use Magento\SalesRule\Model\Coupon;
-use Magento\SalesRule\Model\ResourceModel\Coupon\CollectionFactory as CouponCollectionFactory;
+use Magento\Sales\Model\Service\OrderService;
 use Psr\Log\LoggerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Checkout\Model\Session as CheckoutSession;
-use Magento\SalesRule\Model\ResourceModel\Rule\CollectionFactory as RuleCollectionFactory;
 
 class CheckoutPredispatch implements ObserverInterface
 {
@@ -33,14 +31,9 @@ class CheckoutPredispatch implements ObserverInterface
     protected $orderCollectionFactory;
 
     /**
-     * @var CouponCollectionFactory
+     * @var OrderService
      */
-    protected $couponCollectionFactory;
-
-    /**
-     * @var RuleCollectionFactory
-     */
-    protected $ruleCollectionFactory;
+    protected $orderService;
 
     /**
      * @var LoggerInterface
@@ -71,8 +64,7 @@ class CheckoutPredispatch implements ObserverInterface
         CustomerSession $customerSession,
         CheckoutSession $checkoutSession,
         OrderCollectionFactory $orderCollectionFactory,
-        CouponCollectionFactory $couponCollectionFactory,
-        RuleCollectionFactory $ruleCollectionFactory,
+        OrderService $orderService,
         LoggerInterface $logger,
         \Magento\Framework\Stdlib\DateTime\DateTime $dateTime,
         \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone,
@@ -82,8 +74,7 @@ class CheckoutPredispatch implements ObserverInterface
         $this->customerSession = $customerSession;
         $this->checkoutSession = $checkoutSession;
         $this->orderCollectionFactory = $orderCollectionFactory;
-        $this->couponCollectionFactory = $couponCollectionFactory;
-        $this->ruleCollectionFactory = $ruleCollectionFactory;
+        $this->orderService = $orderService;
         $this->logger = $logger;
         $this->dateTime = $dateTime;
         $this->timezone = $timezone;
@@ -103,16 +94,18 @@ class CheckoutPredispatch implements ObserverInterface
             // Get current page information from observer
             $currentPage = $this->getCurrentPageType($observer);
             
-            $this->logger->info('PayPlus Gateway Observer - Page accessed: ' . $currentPage);
+            $this->logger->info('PayPlus Gateway Observer - TRIGGERED - Page accessed: ' . $currentPage, [
+                'event_name' => $observer->getEvent()->getName(),
+                'request_uri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
+            ]);
 
-            // Check if at least one feature is enabled
-            $orderCancellationEnabled = $this->isOrderCancellationEnabled();
-            $couponRestorationEnabled = $this->isCouponRestorationEnabled();
-
-            if (!$orderCancellationEnabled && !$couponRestorationEnabled) {
-                $this->logger->info('PayPlus Gateway Observer - Order cancellation and coupon restoration both disabled');
+            // Check if order cancellation is enabled
+            if (!$this->isOrderCancellationEnabled()) {
+                $this->logger->info('PayPlus Gateway Observer - Order cancellation disabled in configuration');
                 return;
             }
+
+            $this->logger->info('PayPlus Gateway Observer - Order cancellation is ENABLED, proceeding...');
 
             // Get current customer identifier (ID for logged in, email for guest)
             $customerIdentifier = $this->getCurrentCustomerIdentifier();
@@ -121,10 +114,17 @@ class CheckoutPredispatch implements ObserverInterface
                 return;
             }
 
+            $this->logger->info('PayPlus Gateway Observer - Customer identifier found, processing orders...', [
+                'customer_type' => $customerIdentifier['type'],
+                'customer_value' => $customerIdentifier['value']
+            ]);
+
             // Process orders with duplicate prevention
-            $this->processPendingOrders($customerIdentifier, $orderCancellationEnabled, $couponRestorationEnabled, $currentPage);
+            $this->processPendingOrders($customerIdentifier, $currentPage);
         } catch (\Exception $e) {
-            $this->logger->error('PayPlus Gateway - Error in CheckoutPredispatch observer: ' . $e->getMessage());
+            $this->logger->error('PayPlus Gateway - Error in CheckoutPredispatch observer: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 
@@ -143,6 +143,10 @@ class CheckoutPredispatch implements ObserverInterface
             return 'cart';
         } elseif ($eventName === 'controller_action_predispatch_checkout_index_index') {
             return 'checkout';
+        } elseif ($eventName === 'controller_action_predispatch_onestepcheckout_index_index') {
+            return 'onestep_checkout';
+        } elseif ($eventName === 'sales_quote_save_before') {
+            return 'quote_save';
         }
         
         return 'unknown';
@@ -185,20 +189,7 @@ class CheckoutPredispatch implements ObserverInterface
     protected function isOrderCancellationEnabled()
     {
         return $this->scopeConfig->isSetFlag(
-            'payment/payplus_gateway/orders_config/cancel_pending_orders',
-            ScopeInterface::SCOPE_STORE
-        );
-    }
-
-    /**
-     * Check if coupon restoration is enabled
-     *
-     * @return bool
-     */
-    protected function isCouponRestorationEnabled()
-    {
-        return $this->scopeConfig->isSetFlag(
-            'payment/payplus_gateway/orders_config/restore_coupon_usage',
+            'payment/payplus_gateway/orders_config/cancel_and_restore_orders',
             ScopeInterface::SCOPE_STORE
         );
     }
@@ -207,30 +198,28 @@ class CheckoutPredispatch implements ObserverInterface
      * Process pending orders for the current customer
      *
      * @param array $customerIdentifier
-     * @param bool $cancelOrders
-     * @param bool $restoreCoupons
      * @param string $currentPage
      * @return void
      */
-    protected function processPendingOrders($customerIdentifier, $cancelOrders, $restoreCoupons, $currentPage = 'unknown')
+    protected function processPendingOrders($customerIdentifier, $currentPage = 'unknown')
     {
-        // Get session key for tracking processed orders
-        $sessionKey = 'payplus_processed_orders_' . $customerIdentifier['type'] . '_' . md5($customerIdentifier['value']);
-        $processedOrders = $this->sessionManager->getData($sessionKey) ?: [];
-        $processedInThisSession = [];
+        // Get current quote to check if there's an active reserved order
+        $currentQuote = $this->checkoutSession->getQuote();
+        $currentReservedOrderId = $currentQuote ? $currentQuote->getReservedOrderId() : null;
         
         $this->logger->info('PayPlus Gateway - Processing orders', [
             'customer_type' => $customerIdentifier['type'],
             'customer_identifier' => $customerIdentifier['value'],
             'current_page' => $currentPage,
-            'processed_orders_count' => count($processedOrders)
+            'current_reserved_order_id' => $currentReservedOrderId,
+            'quote_id' => $currentQuote ? $currentQuote->getId() : null
         ]);
 
-        // Get today's date range in store timezone
-        $todayStart = $this->timezone->date()->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+        // Get today's date range in store timezone (extended to include yesterday to catch edge cases)
+        $yesterdayStart = $this->timezone->date()->modify('-1 day')->setTime(0, 0, 0)->format('Y-m-d H:i:s');
         $todayEnd = $this->timezone->date()->setTime(23, 59, 59)->format('Y-m-d H:i:s');
 
-        // Find all pending orders from today for this customer
+        // Find all pending orders from yesterday and today for this customer
         $orderCollection = $this->orderCollectionFactory->create();
         
         // Apply customer filter based on type
@@ -244,287 +233,91 @@ class CheckoutPredispatch implements ObserverInterface
         
         $orderCollection->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT)
             ->addFieldToFilter('status', 'pending_payment')
-            ->addFieldToFilter('created_at', ['gteq' => $todayStart])
-            ->addFieldToFilter('created_at', ['lteq' => $todayEnd]);
+            ->addFieldToFilter('created_at', ['gteq' => $yesterdayStart])
+            ->addFieldToFilter('created_at', ['lteq' => $todayEnd])
+            ->setOrder('created_at', 'DESC'); // Most recent first
 
-        $processedInThisSession = [];
+        $ordersFound = $orderCollection->getSize();
+        $ordersCancelled = 0;
+        
+        $this->logger->info('PayPlus Gateway - Found pending orders', [
+            'total_found' => $ordersFound,
+            'customer_type' => $customerIdentifier['type']
+        ]);
         
         foreach ($orderCollection as $order) {
             $orderId = $order->getId();
+            $orderIncrementId = $order->getIncrementId();
+            $orderCreatedAt = new \DateTime($order->getCreatedAt());
+            $now = new \DateTime();
+            $minutesSinceCreated = $now->diff($orderCreatedAt)->i + ($now->diff($orderCreatedAt)->h * 60);
             
-            // Skip if this order was already processed in this session
-            if (in_array($orderId, $processedOrders)) {
-                $this->logger->info('PayPlus Gateway - Order already processed in session: ' . $orderId);
+            // If this order matches the current quote's reserved order ID, only skip it if it's very recent (less than 5 minutes old)
+            // This prevents keeping old orders that match the current reserved ID but are from previous sessions
+            if ($currentReservedOrderId && $orderIncrementId === $currentReservedOrderId && $minutesSinceCreated < 5) {
+                $this->logger->info('PayPlus Gateway - Skipping current active recent order: ' . $orderId . ' (' . $orderIncrementId . ')', [
+                    'minutes_old' => $minutesSinceCreated
+                ]);
                 continue;
             }
-
+            
             $couponCode = $order->getCouponCode();
             $hasCoupon = !empty($couponCode);
             
-            $this->logger->info('PayPlus Gateway - Processing order', [
+            $this->logger->info('PayPlus Gateway - Processing order for cancellation', [
                 'order_id' => $orderId,
+                'order_increment_id' => $orderIncrementId,
                 'has_coupon' => $hasCoupon,
                 'coupon_code' => $couponCode,
-                'page' => $currentPage
+                'page' => $currentPage,
+                'created_at' => $order->getCreatedAt(),
+                'minutes_old' => $minutesSinceCreated,
+                'is_current_reserved' => ($currentReservedOrderId && $orderIncrementId === $currentReservedOrderId)
             ]);
 
-            // Handle coupon restoration (can work independently)
-            if ($hasCoupon && $restoreCoupons) {
-                $this->restoreCouponUsage($couponCode, $order, $customerIdentifier);
-            }
-
-            // Handle order cancellation (can work independently)
-            if ($cancelOrders) {
-                $this->cancelOrder($order, $hasCoupon, $restoreCoupons);
-            } elseif ($hasCoupon && $restoreCoupons) {
-                // Just restore coupon without canceling order
-                $order->addCommentToStatusHistory('Coupon usage restored by PayPlus Gateway', false);
-                $order->save();
-            }
-            
-            // Mark order as processed
-            $processedInThisSession[] = $orderId;
+            // Cancel order using Magento's built-in service (handles coupon and stock restoration)
+            $this->cancelOrder($order);
+            $ordersCancelled++;
         }
         
-        // Update session with newly processed orders
-        if (!empty($processedInThisSession)) {
-            $allProcessedOrders = array_unique(array_merge($processedOrders, $processedInThisSession));
-            $this->sessionManager->setData($sessionKey, $allProcessedOrders);
-            
-            $this->logger->info('PayPlus Gateway - Updated session with processed orders', [
-                'newly_processed' => count($processedInThisSession),
-                'total_processed' => count($allProcessedOrders),
-                'page' => $currentPage
-            ]);
-        }
+        $this->logger->info('PayPlus Gateway - Completed order processing', [
+            'orders_found' => $ordersFound,
+            'orders_cancelled' => $ordersCancelled,
+            'page' => $currentPage
+        ]);
     }
 
     /**
-     * Restore coupon usage by properly handling both global and per-customer limits
-     *
-     * @param string $couponCode
-     * @param Order $order
-     * @param array|null $customerIdentifier
-     * @return void
-     */
-    protected function restoreCouponUsage($couponCode, $order, $customerIdentifier = null)
-    {
-        try {
-            // Get the coupon
-            $couponCollection = $this->couponCollectionFactory->create();
-            $couponCollection->addFieldToFilter('code', $couponCode);
-
-            $coupon = $couponCollection->getFirstItem();
-            if (!$coupon || !$coupon->getId()) {
-                $this->logger->warning('PayPlus Gateway - Coupon not found for restoration', [
-                    'coupon_code' => $couponCode,
-                    'order_id' => $order->getId()
-                ]);
-                return;
-            }
-
-            // Get the sales rule to check usage limits
-            $ruleCollection = $this->ruleCollectionFactory->create();
-            $rule = $ruleCollection->addFieldToFilter('rule_id', $coupon->getRuleId())->getFirstItem();
-
-            if (!$rule->getId()) {
-                $this->logger->warning('PayPlus Gateway - Sales rule not found for coupon', [
-                    'coupon_code' => $couponCode,
-                    'rule_id' => $coupon->getRuleId(),
-                    'order_id' => $order->getId()
-                ]);
-                return;
-            }
-
-            $customerId = $order->getCustomerId();
-            
-            // Determine customer identifier if not provided
-            if ($customerIdentifier === null) {
-                if ($customerId) {
-                    $customerIdentifier = ['type' => 'customer_id', 'value' => $customerId];
-                } else {
-                    $customerIdentifier = ['type' => 'customer_email', 'value' => $order->getCustomerEmail()];
-                }
-            }
-
-            // Handle registered vs guest customers
-            if ($customerIdentifier['type'] === 'customer_id') {
-                // Registered customer
-                $this->restoreRegisteredCustomerCoupon($coupon, $rule, $order, $customerIdentifier['value']);
-            } else {
-                // Guest customer
-                $this->restoreGuestCustomerCoupon($coupon, $rule, $order, $customerIdentifier['value']);
-            }
-
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'PayPlus Gateway - Error restoring coupon usage: ' . $e->getMessage(),
-                [
-                    'coupon_code' => $couponCode,
-                    'order_id' => $order->getId()
-                ]
-            );
-        }
-    }
-
-    /**
-     * Get customer's usage count for a specific coupon
-     *
-     * @param string $couponCode
-     * @param int $customerId
-     * @param int $excludeOrderId
-     * @return int
-     */
-    protected function getCustomerCouponUsage($couponCode, $customerId, $excludeOrderId = null)
-    {
-        if (!$customerId) {
-            return 0;
-        }
-
-        try {
-            $orderCollection = $this->orderCollectionFactory->create();
-            $orderCollection->addFieldToFilter('customer_id', $customerId)
-                ->addFieldToFilter('coupon_code', $couponCode)
-                ->addFieldToFilter('state', ['in' => [
-                    \Magento\Sales\Model\Order::STATE_PROCESSING,
-                    \Magento\Sales\Model\Order::STATE_COMPLETE,
-                    \Magento\Sales\Model\Order::STATE_CLOSED
-                ]]);
-
-            if ($excludeOrderId) {
-                $orderCollection->addFieldToFilter('entity_id', ['neq' => $excludeOrderId]);
-            }
-
-            return $orderCollection->getSize();
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'PayPlus Gateway - Error checking customer coupon usage: ' . $e->getMessage(),
-                [
-                    'coupon_code' => $couponCode,
-                    'customer_id' => $customerId
-                ]
-            );
-            return 0;
-        }
-    }
-
-    /**
-     * Restore customer-specific coupon usage (for per-customer limits)
-     *
-     * @param string $couponCode
-     * @param int $customerId
-     * @param int $orderIdToRestore
-     * @return void
-     */
-    protected function restoreCustomerCouponUsage($couponCode, $customerId, $orderIdToRestore)
-    {
-        try {
-            // Magento tracks per-customer usage in the salesrule_customer table
-            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-            $resource = $objectManager->get(\Magento\Framework\App\ResourceConnection::class);
-            $connection = $resource->getConnection();
-
-            // Get the coupon
-            $couponCollection = $this->couponCollectionFactory->create();
-            $couponCollection->addFieldToFilter('code', $couponCode);
-            $coupon = $couponCollection->getFirstItem();
-
-            if (!$coupon || !$coupon->getId()) {
-                return;
-            }
-
-            $ruleId = $coupon->getRuleId();
-
-            // Check if there's a customer usage record
-            $customerTable = $resource->getTableName('salesrule_customer');
-            $select = $connection->select()
-                ->from($customerTable)
-                ->where('rule_id = ?', $ruleId)
-                ->where('customer_id = ?', $customerId);
-
-            $customerUsageRecord = $connection->fetchRow($select);
-
-            if ($customerUsageRecord && $customerUsageRecord['times_used'] > 0) {
-                // Decrement the customer's usage count
-                $connection->update(
-                    $customerTable,
-                    ['times_used' => $customerUsageRecord['times_used'] - 1],
-                    [
-                        'rule_id = ?' => $ruleId,
-                        'customer_id = ?' => $customerId
-                    ]
-                );
-
-                $this->logger->info(
-                    'PayPlus Gateway - Restored customer coupon usage record',
-                    [
-                        'coupon_code' => $couponCode,
-                        'customer_id' => $customerId,
-                        'rule_id' => $ruleId,
-                        'previous_customer_usage' => $customerUsageRecord['times_used'],
-                        'new_customer_usage' => $customerUsageRecord['times_used'] - 1
-                    ]
-                );
-            }
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'PayPlus Gateway - Error restoring customer coupon usage: ' . $e->getMessage(),
-                [
-                    'coupon_code' => $couponCode,
-                    'customer_id' => $customerId
-                ]
-            );
-        }
-    }
-
-    /**
-     * Cancel the order
+     * Cancel the order using Magento's OrderService
      *
      * @param Order $order
-     * @param bool $hasCoupon
-     * @param bool $couponWasRestored
      * @return void
      */
-    protected function cancelOrder($order, $hasCoupon = false, $couponWasRestored = false)
+    protected function cancelOrder($order)
     {
         try {
             if ($order->canCancel()) {
-                $order->cancel();
+                // Use Magento's built-in order service which automatically handles:
+                // - Stock restoration
+                // - Coupon usage restoration  
+                // - Order state/status changes
+                $this->orderService->cancel($order->getId());
 
-                // Automatically return stock for each item in the cancelled order
-                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-                $stockRegistry = $objectManager->get(\Magento\CatalogInventory\Api\StockRegistryInterface::class);
-
-                foreach ($order->getAllItems() as $item) {
-                    $productId = $item->getProductId();
-                    $qty = $item->getQtyOrdered();
-                    $stockItem = $stockRegistry->getStockItem($productId, $order->getStore()->getWebsiteId());
-                    $stockItem->setQty($stockItem->getQty() + $qty);
-                    $stockItem->setIsInStock(true);
-                    $stockRegistry->updateStockItemBySku($item->getSku(), $stockItem);
-                }
-
-                if ($hasCoupon && $couponWasRestored) {
-                    $comment = 'Order cancelled automatically due to new checkout session. Coupon usage was restored.';
-                } elseif ($hasCoupon) {
-                    $comment = 'Order cancelled automatically due to new checkout session. Coupon was not restored (feature disabled).';
-                } else {
-                    $comment = 'Order cancelled automatically due to new checkout session.';
-                }
+                $couponCode = $order->getCouponCode();
+                $hasCoupon = !empty($couponCode);
+                
+                $comment = $hasCoupon 
+                    ? 'Order cancelled automatically due to new checkout session. Coupon usage and stock have been restored.'
+                    : 'Order cancelled automatically due to new checkout session. Stock has been restored.';
 
                 $order->addCommentToStatusHistory($comment, false, false);
                 $order->save();
 
-                $logMessage = $hasCoupon
-                    ? 'PayPlus Gateway - Cancelled pending order with coupon'
-                    : 'PayPlus Gateway - Cancelled pending order';
-
-                $this->logger->info($logMessage, [
+                $this->logger->info('PayPlus Gateway - Cancelled pending order using OrderService', [
                     'order_id' => $order->getId(),
-                    'coupon_code' => $order->getCouponCode(),
+                    'coupon_code' => $couponCode,
                     'customer_id' => $order->getCustomerId(),
-                    'had_coupon' => $hasCoupon,
-                    'coupon_restored' => $couponWasRestored
+                    'had_coupon' => $hasCoupon
                 ]);
             }
         } catch (\Exception $e) {
@@ -534,117 +327,6 @@ class CheckoutPredispatch implements ObserverInterface
                     'order_id' => $order->getId()
                 ]
             );
-        }
-    }
-
-    /**
-     * Restore coupon for registered customers
-     *
-     * @param Coupon $coupon
-     * @param \Magento\SalesRule\Model\Rule $rule
-     * @param Order $order
-     * @param int $customerId
-     * @return void
-     */
-    protected function restoreRegisteredCustomerCoupon($coupon, $rule, $order, $customerId)
-    {
-        $currentGlobalUsage = $coupon->getTimesUsed();
-        $restorationActions = [];
-
-        // Check if this customer actually used this coupon
-        $customerUsageCount = $this->getCustomerCouponUsage($coupon->getCode(), $customerId, $order->getId());
-
-        // Restore global usage if applicable
-        if ($currentGlobalUsage > 0) {
-            $coupon->setTimesUsed($currentGlobalUsage - 1);
-            $restorationActions[] = "Global usage: {$currentGlobalUsage} → " . ($currentGlobalUsage - 1);
-        }
-
-        // Restore per-customer usage if applicable and customer has usage limits
-        if ($customerId && $customerUsageCount > 0 && $rule->getUsesPerCustomer()) {
-            $this->restoreCustomerCouponUsage($coupon->getCode(), $customerId, $order->getId());
-            $restorationActions[] = "Customer usage restored for customer {$customerId}";
-        }
-
-        if (!empty($restorationActions)) {
-            $coupon->save();
-            $this->logger->info('PayPlus Gateway - Restored coupon usage for registered customer', [
-                'coupon_code' => $coupon->getCode(),
-                'order_id' => $order->getId(),
-                'customer_id' => $customerId,
-                'actions' => $restorationActions
-            ]);
-        }
-    }
-
-    /**
-     * Restore coupon for guest customers
-     *
-     * @param Coupon $coupon
-     * @param \Magento\SalesRule\Model\Rule $rule
-     * @param Order $order
-     * @param string $customerEmail
-     * @return void
-     */
-    protected function restoreGuestCustomerCoupon($coupon, $rule, $order, $customerEmail)
-    {
-        $currentGlobalUsage = $coupon->getTimesUsed();
-        $restorationActions = [];
-
-        // For guest customers, we only restore global usage
-        // Per-customer limits don't apply to guests in the same way
-        if ($currentGlobalUsage > 0) {
-            $coupon->setTimesUsed($currentGlobalUsage - 1);
-            $restorationActions[] = "Global usage: {$currentGlobalUsage} → " . ($currentGlobalUsage - 1);
-        }
-
-        // Check if this specific guest order used the coupon
-        $guestUsageCount = $this->getGuestCouponUsage($coupon->getCode(), $customerEmail, $order->getId());
-        
-        if ($guestUsageCount > 0) {
-            $restorationActions[] = "Guest usage confirmed for email {$customerEmail}";
-        }
-
-        if (!empty($restorationActions)) {
-            $coupon->save();
-            $this->logger->info('PayPlus Gateway - Restored coupon usage for guest customer', [
-                'coupon_code' => $coupon->getCode(),
-                'order_id' => $order->getId(),
-                'customer_email' => $customerEmail,
-                'actions' => $restorationActions
-            ]);
-        }
-    }
-
-    /**
-     * Get guest customer's usage count for a specific coupon
-     *
-     * @param string $couponCode
-     * @param string $customerEmail
-     * @param int $excludeOrderId
-     * @return int
-     */
-    protected function getGuestCouponUsage($couponCode, $customerEmail, $excludeOrderId = null)
-    {
-        try {
-            $orderCollection = $this->orderCollectionFactory->create();
-            $orderCollection->addFieldToFilter('customer_email', $customerEmail)
-                           ->addFieldToFilter('customer_id', ['null' => true])
-                           ->addFieldToFilter('coupon_code', $couponCode)
-                           ->addFieldToFilter('state', ['neq' => Order::STATE_CANCELED]);
-
-            if ($excludeOrderId) {
-                $orderCollection->addFieldToFilter('entity_id', ['neq' => $excludeOrderId]);
-            }
-
-            return $orderCollection->getSize();
-        } catch (\Exception $e) {
-            $this->logger->error('PayPlus Gateway - Error getting guest coupon usage', [
-                'error' => $e->getMessage(),
-                'coupon_code' => $couponCode,
-                'customer_email' => $customerEmail
-            ]);
-            return 0;
         }
     }
 }
