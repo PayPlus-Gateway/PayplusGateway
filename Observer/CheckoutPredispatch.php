@@ -93,7 +93,7 @@ class CheckoutPredispatch implements ObserverInterface
         try {
             // Get current page information from observer
             $currentPage = $this->getCurrentPageType($observer);
-            
+
             $this->logger->info('PayPlus Gateway Observer - TRIGGERED - Page accessed: ' . $currentPage, [
                 'event_name' => $observer->getEvent()->getName(),
                 'request_uri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
@@ -138,7 +138,7 @@ class CheckoutPredispatch implements ObserverInterface
     {
         // Get the event name to determine page type
         $eventName = $observer->getEvent()->getName();
-        
+
         if ($eventName === 'controller_action_predispatch_checkout_cart_index') {
             return 'cart';
         } elseif ($eventName === 'controller_action_predispatch_checkout_index_index') {
@@ -148,7 +148,7 @@ class CheckoutPredispatch implements ObserverInterface
         } elseif ($eventName === 'sales_quote_save_before') {
             return 'quote_save';
         }
-        
+
         return 'unknown';
     }
 
@@ -206,7 +206,7 @@ class CheckoutPredispatch implements ObserverInterface
         // Get current quote to check if there's an active reserved order
         $currentQuote = $this->checkoutSession->getQuote();
         $currentReservedOrderId = $currentQuote ? $currentQuote->getReservedOrderId() : null;
-        
+
         $this->logger->info('PayPlus Gateway - Processing orders', [
             'customer_type' => $customerIdentifier['type'],
             'customer_identifier' => $customerIdentifier['value'],
@@ -221,16 +221,16 @@ class CheckoutPredispatch implements ObserverInterface
 
         // Find all pending orders from yesterday and today for this customer
         $orderCollection = $this->orderCollectionFactory->create();
-        
+
         // Apply customer filter based on type
         if ($customerIdentifier['type'] === 'customer_id') {
             $orderCollection->addFieldToFilter('customer_id', $customerIdentifier['value']);
         } else {
             // For guest customers, filter by email
             $orderCollection->addFieldToFilter('customer_email', $customerIdentifier['value'])
-                           ->addFieldToFilter('customer_id', ['null' => true]);
+                ->addFieldToFilter('customer_id', ['null' => true]);
         }
-        
+
         $orderCollection->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT)
             ->addFieldToFilter('status', 'pending_payment')
             ->addFieldToFilter('created_at', ['gteq' => $yesterdayStart])
@@ -239,19 +239,19 @@ class CheckoutPredispatch implements ObserverInterface
 
         $ordersFound = $orderCollection->getSize();
         $ordersCancelled = 0;
-        
+
         $this->logger->info('PayPlus Gateway - Found pending orders', [
             'total_found' => $ordersFound,
             'customer_type' => $customerIdentifier['type']
         ]);
-        
+
         foreach ($orderCollection as $order) {
             $orderId = $order->getId();
             $orderIncrementId = $order->getIncrementId();
             $orderCreatedAt = new \DateTime($order->getCreatedAt());
             $now = new \DateTime();
             $minutesSinceCreated = $now->diff($orderCreatedAt)->i + ($now->diff($orderCreatedAt)->h * 60);
-            
+
             // If this order matches the current quote's reserved order ID, only skip it if it's very recent (less than 5 minutes old)
             // This prevents keeping old orders that match the current reserved ID but are from previous sessions
             if ($currentReservedOrderId && $orderIncrementId === $currentReservedOrderId && $minutesSinceCreated < 5) {
@@ -260,10 +260,10 @@ class CheckoutPredispatch implements ObserverInterface
                 ]);
                 continue;
             }
-            
+
             $couponCode = $order->getCouponCode();
             $hasCoupon = !empty($couponCode);
-            
+
             $this->logger->info('PayPlus Gateway - Processing order for cancellation', [
                 'order_id' => $orderId,
                 'order_increment_id' => $orderIncrementId,
@@ -279,7 +279,7 @@ class CheckoutPredispatch implements ObserverInterface
             $this->cancelOrder($order);
             $ordersCancelled++;
         }
-        
+
         $this->logger->info('PayPlus Gateway - Completed order processing', [
             'orders_found' => $ordersFound,
             'orders_cancelled' => $ordersCancelled,
@@ -297,28 +297,37 @@ class CheckoutPredispatch implements ObserverInterface
     {
         try {
             if ($order->canCancel()) {
-                // Use Magento's built-in order service which automatically handles:
-                // - Stock restoration
-                // - Coupon usage restoration  
-                // - Order state/status changes
-                $this->orderService->cancel($order->getId());
+                $orderId = $order->getId();
+                // Cancel the order
+                $this->orderService->cancel($orderId);
 
-                $couponCode = $order->getCouponCode();
-                $hasCoupon = !empty($couponCode);
-                
-                $comment = $hasCoupon 
-                    ? 'Order cancelled automatically due to new checkout session. Coupon usage and stock have been restored.'
-                    : 'Order cancelled automatically due to new checkout session. Stock has been restored.';
+                // Reload the order to get the updated state
+                $order = $this->orderCollectionFactory->create()
+                    ->addFieldToFilter('entity_id', $orderId)
+                    ->getFirstItem();
 
-                $order->addCommentToStatusHistory($comment, false, false);
-                $order->save();
+                if ($order && $order->isCanceled()) {
+                    $couponCode = $order->getCouponCode();
+                    $hasCoupon = !empty($couponCode);
 
-                $this->logger->info('PayPlus Gateway - Cancelled pending order using OrderService', [
-                    'order_id' => $order->getId(),
-                    'coupon_code' => $couponCode,
-                    'customer_id' => $order->getCustomerId(),
-                    'had_coupon' => $hasCoupon
-                ]);
+                    $comment = $hasCoupon
+                        ? 'Order cancelled automatically due to new checkout session. Coupon usage and stock have been restored.'
+                        : 'Order cancelled automatically due to new checkout session. Stock has been restored.';
+
+                    $order->addCommentToStatusHistory($comment, false, false);
+                    $order->save();
+
+                    $this->logger->info('PayPlus Gateway - Cancelled pending order using OrderService', [
+                        'order_id' => $orderId,
+                        'coupon_code' => $couponCode,
+                        'customer_id' => $order->getCustomerId(),
+                        'had_coupon' => $hasCoupon
+                    ]);
+                } else {
+                    $this->logger->warning('PayPlus Gateway - OrderService did not cancel the order as expected', [
+                        'order_id' => $orderId
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             $this->logger->error(
