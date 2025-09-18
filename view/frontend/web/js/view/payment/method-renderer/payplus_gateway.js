@@ -152,6 +152,12 @@ define(
                     type: 'get',
                     success: (Response) => {
                         if (Response.status == 'success' && Response.redirectUrl) {
+                            // Validate URL is a string to prevent jQuery errors
+                            if (typeof Response.redirectUrl !== 'string' || !Response.redirectUrl.trim()) {
+                                alert($t('Error processing your request'));
+                                return false;
+                            }
+                            
                             if (window.checkoutConfig.payment.payplus_gateway.form_type == 'iframe') {
                                 this.getIframeURL(Response.redirectUrl);
                             } else if (window.checkoutConfig.payment.payplus_gateway.form_type == 'iframe_inline') {
@@ -167,17 +173,50 @@ define(
             },
 
             showFullScreenIframe: function(paymentUrl) {
-                // Get header height to position iframe below it
+                // Validate URL parameter to prevent jQuery errors
+                if (typeof paymentUrl !== 'string' || !paymentUrl.trim()) {
+                    alert($t('Error processing your request'));
+                    return false;
+                }
+
+                // Try to get header height with multiple fallback selectors
                 var headerHeight = 0;
-                var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
-                if (header.length > 0) {
-                    headerHeight = header.outerHeight();
+                var headerFound = false;
+                var headerSelectors = [
+                    '.page-header',
+                    '.header',
+                    '.page-wrapper .header-container',
+                    '.page-top',
+                    '.header-container',
+                    '.top-container',
+                    '.navbar',
+                    'header',
+                    '.site-header',
+                    '.main-header'
+                ];
+
+                // Try each selector until we find a header
+                for (var i = 0; i < headerSelectors.length; i++) {
+                    var header = $(headerSelectors[i]);
+                    if (header.length > 0 && header.is(':visible')) {
+                        headerHeight = header.outerHeight();
+                        headerFound = true;
+                        console.log('PayPlus: Found header with selector:', headerSelectors[i], 'Height:', headerHeight);
+                        break;
+                    }
+                }
+
+                // If no header found or header height is unreasonable, use fallback full-page mode
+                if (!headerFound || headerHeight < 10 || headerHeight > $(window).height() / 2) {
+                    console.log('PayPlus: Header not found or invalid height (' + headerHeight + 'px). Using full-page fallback mode.');
+                    headerHeight = 0;
+                    headerFound = false;
                 }
 
                 // Calculate available height (viewport height minus header)
                 var availableHeight = $(window).height() - headerHeight;
 
-                // Create full-width overlay starting after header
+                // Create full-width overlay
                 var overlay = $('<div>', {
                     id: 'payplus-fullscreen-overlay',
                     css: {
@@ -193,7 +232,7 @@ define(
                     }
                 });
 
-                // Create header bar with close button
+                // Create header bar with close button (always shown, even in fallback mode)
                 var headerBar = $('<div>', {
                     css: {
                         display: 'flex',
@@ -201,7 +240,8 @@ define(
                         alignItems: 'center',
                         padding: '15px 20px',
                         backgroundColor: '#fff',
-                        borderBottom: '1px solid #ddd'
+                        borderBottom: '1px solid #ddd',
+                        flexShrink: 0 // Prevent header bar from shrinking
                     }
                 });
 
@@ -225,15 +265,20 @@ define(
                         fontSize: '14px',
                         cursor: 'pointer',
                         color: '#666'
-                    },
-                    hover: function() {
-                        $(this).css('backgroundColor', '#e9e9e9');
-                    },
-                    click: function() {
-                        overlay.remove();
-                        // Optionally redirect back to cart
-                        window.location.href = url.build('checkout/cart');
                     }
+                });
+
+                closeButton.hover(
+                    function() { $(this).css('backgroundColor', '#e9e9e9'); },
+                    function() { $(this).css('backgroundColor', '#f5f5f5'); }
+                );
+
+                closeButton.click(function() {
+                    overlay.remove();
+                    $(window).off('resize.payplus message.payplus');
+                    $('.checkout-container, .page-main').show();
+                    // Redirect back to cart
+                    window.location.href = url.build('checkout/cart');
                 });
 
                 headerBar.append(title, closeButton);
@@ -243,7 +288,8 @@ define(
                     css: {
                         flex: '1',
                         position: 'relative',
-                        backgroundColor: '#fff'
+                        backgroundColor: '#fff',
+                        minHeight: '400px' // Ensure minimum height
                     }
                 });
 
@@ -259,7 +305,8 @@ define(
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: '#fff'
+                        backgroundColor: '#fff',
+                        zIndex: 1
                     }
                 });
 
@@ -268,20 +315,32 @@ define(
                     $('<style id="payplus-spinner-css">@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>').appendTo('head');
                 }
 
-                // Create iframe
+                // Create iframe with error handling
                 var iframe = $('<iframe>', {
-                    src: paymentUrl,
                     css: {
                         width: '100%',
                         height: '100%',
                         border: 'none',
-                        display: 'none'
-                    },
-                    load: function() {
-                        loadingIndicator.hide();
-                        $(this).show();
+                        display: 'none',
+                        zIndex: 2
                     }
                 });
+
+                // Handle iframe load success
+                iframe.on('load', function() {
+                    console.log('PayPlus: Iframe loaded successfully');
+                    loadingIndicator.hide();
+                    $(this).show();
+                });
+
+                // Handle iframe load errors
+                iframe.on('error', function() {
+                    console.error('PayPlus: Iframe failed to load');
+                    loadingIndicator.html('<div style="text-align: center; padding: 50px; color: #d32f2f;"><p>Failed to load payment form. Please try again.</p><button onclick="window.location.reload()" style="background: #007bdb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Retry</button></div>');
+                });
+
+                // Set iframe source after setup to ensure error handlers are in place
+                iframe.attr('src', paymentUrl);
 
                 // Assemble the overlay
                 iframeContainer.append(loadingIndicator, iframe);
@@ -295,15 +354,24 @@ define(
 
                 // Handle window resize to maintain proper positioning
                 $(window).on('resize.payplus', function() {
-                    var newHeaderHeight = 0;
-                    var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
-                    if (header.length > 0) {
-                        newHeaderHeight = header.outerHeight();
+                    if (headerFound) {
+                        // Only recalculate header height if we initially found one
+                        var newHeaderHeight = 0;
+                        for (var i = 0; i < headerSelectors.length; i++) {
+                            var header = $(headerSelectors[i]);
+                            if (header.length > 0 && header.is(':visible')) {
+                                newHeaderHeight = header.outerHeight();
+                                break;
+                            }
+                        }
+                        if (newHeaderHeight > 0) {
+                            headerHeight = newHeaderHeight;
+                        }
                     }
-                    var newAvailableHeight = $(window).height() - newHeaderHeight;
+                    var newAvailableHeight = $(window).height() - headerHeight;
                     
                     overlay.css({
-                        top: newHeaderHeight + 'px',
+                        top: headerHeight + 'px',
                         height: newAvailableHeight + 'px'
                     });
                 });
@@ -329,6 +397,13 @@ define(
                                 break;
                         }
                     }
+                });
+
+                console.log('PayPlus: Full-screen iframe initialized', {
+                    headerFound: headerFound,
+                    headerHeight: headerHeight,
+                    availableHeight: availableHeight,
+                    paymentUrl: paymentUrl.substring(0, 50) + '...'
                 });
             },
         });
