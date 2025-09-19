@@ -1,0 +1,261 @@
+<?php
+/**
+ * PayPlus Gateway Iframe Page Template
+ *
+ * @var \Payplus\PayplusGateway\Block\Payment\IframePage $block
+ */
+?>
+<div class="payplus-iframe-page">
+    <?php if ($block->isValidOrder()): ?>
+        <div class="page-title-wrapper">
+            <h1 class="page-title">
+                <span class="base"><?= $block->escapeHtml(__('Complete Your Payment')) ?></span>
+            </h1>
+        </div>
+
+        <div class="payplus-iframe-container">
+            <div class="iframe-loading" id="iframe-loading">
+                <div class="loading-message">
+                    <i class="fa fa-spinner fa-spin"></i>
+                    <?= $block->escapeHtml($block->getLoadingMessage()) ?>
+                </div>
+            </div>
+
+            <div class="iframe-error" id="iframe-error" style="display: none;">
+                <div class="error-message">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <?= $block->escapeHtml($block->getErrorMessage()) ?>
+                </div>
+                <div class="error-actions">
+                    <button type="button" class="action primary" onclick="location.reload()">
+                        <?= $block->escapeHtml(__('Try Again')) ?>
+                    </button>
+                    <a href="<?= $block->escapeUrl($block->getCancelUrl()) ?>" class="action secondary">
+                        <?= $block->escapeHtml(__('Return to Cart')) ?>
+                    </a>
+                </div>
+            </div>
+
+            <iframe 
+                id="payplus-iframe" 
+                name="payplus-iframe"
+                allowpaymentrequest
+                style="width: 100%; height: <?= (int)$block->getIframeHeight() ?>px; border: none; display: none;"
+                onload="handleIframeLoad()"
+                onerror="handleIframeError()">
+            </iframe>
+        </div>
+
+        <div class="iframe-footer">
+            <div class="footer-actions">
+                <a href="<?= $block->escapeUrl($block->getCancelUrl()) ?>" class="action secondary">
+                    <?= $block->escapeHtml(__('← Return to Cart')) ?>
+                </a>
+            </div>
+            <div class="footer-info">
+                <small><?= $block->escapeHtml(__('Secure payment powered by PayPlus')) ?></small>
+            </div>
+        </div>
+
+    <?php else: ?>
+        <div class="page-title-wrapper">
+            <h1 class="page-title">
+                <span class="base"><?= $block->escapeHtml(__('Payment Error')) ?></span>
+            </h1>
+        </div>
+        
+        <div class="message-error error message">
+            <div><?= $block->escapeHtml(__('Invalid order or payment session. Please try again.')) ?></div>
+            <?php if ($block->getOrderId()): ?>
+                <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                    Debug: Order ID = <?= (int)$block->getOrderId() ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        
+        <div class="actions-toolbar">
+            <div class="primary">
+                <a href="<?= $block->escapeUrl($block->getCancelUrl()) ?>" class="action primary">
+                    <?= $block->escapeHtml(__('Return to Cart')) ?>
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<style>
+.payplus-iframe-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.payplus-iframe-container {
+    position: relative;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.iframe-loading {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+}
+
+.loading-message {
+    font-size: 16px;
+    color: #666;
+}
+
+.loading-message i {
+    margin-right: 10px;
+    color: #007bdb;
+}
+
+.iframe-error {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+}
+
+.error-message {
+    font-size: 16px;
+    color: #e02b27;
+    margin-bottom: 20px;
+}
+
+.error-message i {
+    margin-right: 10px;
+}
+
+.error-actions button,
+.error-actions a {
+    margin: 0 10px;
+}
+
+.iframe-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-top: 1px solid #ddd;
+    margin-top: 20px;
+}
+
+.footer-info {
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .payplus-iframe-page {
+        padding: 10px;
+    }
+    
+    .iframe-footer {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+}
+</style>
+
+<script>
+require(['jquery', 'mage/url'], function($, url) {
+    'use strict';
+
+    let iframeLoaded = false;
+    let loadTimeout;
+
+    // Function to handle iframe load
+    window.handleIframeLoad = function() {
+        if (!iframeLoaded) {
+            iframeLoaded = true;
+            clearTimeout(loadTimeout);
+            $('#iframe-loading').hide();
+            $('#payplus-iframe').show();
+        }
+    };
+
+    // Function to handle iframe error
+    window.handleIframeError = function() {
+        clearTimeout(loadTimeout);
+        $('#iframe-loading').hide();
+        $('#iframe-error').show();
+    };
+
+    // Load payment URL and set iframe src
+    $(document).ready(function() {
+        const orderId = <?= (int)$block->getOrderId() ?>;
+        
+        if (!orderId) {
+            handleIframeError();
+            return;
+        }
+
+        // Set timeout for loading
+        loadTimeout = setTimeout(function() {
+            if (!iframeLoaded) {
+                handleIframeError();
+            }
+        }, 30000); // 30 seconds timeout
+
+        // Get payment redirect URL
+        $.ajax({
+            url: url.build('payplus_gateway/ws/getredirect/orderid/' + orderId),
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                console.log('PayPlus Gateway - GetRedirect response:', response);
+                if (response.status === 'success' && response.redirectUrl) {
+                    console.log('PayPlus Gateway - Setting iframe src to:', response.redirectUrl);
+                    
+                    // Clear the loading timeout since we got a response
+                    clearTimeout(loadTimeout);
+                    
+                    // Set a new timeout for iframe loading
+                    loadTimeout = setTimeout(function() {
+                        if (!iframeLoaded) {
+                            console.log('PayPlus Gateway - Iframe failed to load after URL was set');
+                            handleIframeError();
+                        }
+                    }, 10000); // 10 seconds for iframe to load
+                    
+                    $('#payplus-iframe').attr('src', response.redirectUrl);
+                } else {
+                    console.error('PayPlus Gateway - Invalid response:', response);
+                    handleIframeError();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('PayPlus Gateway - AJAX error details:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText,
+                    statusCode: xhr.status
+                });
+                handleIframeError();
+            }
+        });
+
+        // Listen for messages from iframe (for success/failure handling)
+        window.addEventListener('message', function(event) {
+            // Verify origin if needed
+            if (event.data && event.data.payplus) {
+                switch(event.data.status) {
+                    case 'success':
+                        window.location.href = '<?= $block->escapeUrl($block->getSuccessUrl()) ?>';
+                        break;
+                    case 'failure':
+                        window.location.href = '<?= $block->escapeUrl($block->getFailureUrl()) ?>';
+                        break;
+                    case 'cancel':
+                        window.location.href = '<?= $block->escapeUrl($block->getCancelUrl()) ?>';
+                        break;
+                }
+            }
+        }, false);
+    });
+});
+</script>

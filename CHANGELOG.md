@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.9] - 2025-09-19
+
+### Added
+
+- Added automatic order cancellation feature for abandoned payment pages, which restores inventory and unredeemed coupons when enabled in plugin settings.
+- Added full-page iframe payment option that provides a complete page payment interface experience, activated through plugin settings.
+
 ## [1.2.7] - 2025-08-25
 
 ### Fix

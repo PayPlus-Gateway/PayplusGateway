@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.2.7 ) </label>
+                <label>PayPlus - Payment Gateway ( 1.2.9 ) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
@@ -93,6 +93,11 @@
                             <field id="iframe_or_redirect">iframe</field>
                         </depends>
                     </field>
+                    <field id="display_payment_info_hebrew" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Display payment information in Hebrew</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, payment details will be displayed in Hebrew regardless of locale</comment>
+                    </field>
                 </group>
                 <group id="payment_page" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
@@ -175,15 +180,10 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <frontend_model>Payplus\PayplusGateway\Block\System\Config\Form\Field\Disable</frontend_model>
                     </field>
-                    <field id="cancel_pending_orders" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Cancel pending orders when customer enters checkout</label>
+                    <field id="cancel_and_restore_orders" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Cancel pending orders and restore coupons/stock</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout again. This prevents duplicate orders.</comment>
-                    </field>
-                    <field id="restore_coupon_usage" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Restore coupon usage when canceling pending orders</label>
-                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <comment>When enabled, automatically restores coupon usage counts for pending orders with coupons. Can work independently or together with order cancellation.</comment>
+                        <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout or cart page again. This prevents duplicate orders and automatically restores coupon usage and stock using Magento's built-in OrderService. Supported on checkout, cart, and one-step checkout pages.</comment>
                     </field>
                 </group>
                 <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">

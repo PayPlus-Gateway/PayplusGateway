@@ -18,7 +18,11 @@ class IframeOrRedirect implements \Magento\Framework\Option\ArrayInterface
         return [
             [
                 'value' => 'iframe',
-                'label' => __('Iframe')
+                'label' => __('Iframe (Same Page)')
+            ],
+            [
+                'value' => 'iframe_inline',
+                'label' => __('Iframe (Next Page)')
             ],
             [
                 'value' => 'redirect',
