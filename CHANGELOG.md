@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1] - 2025-09-21
+
+### Added
+
+- Added configurable auto-refresh feature for cart page after order cancellation to ensure proper page updates across all themes, particularly when accessing previously saved products - configurable through plugin settings.
+
+
 ## [1.3.0] - 2025-09-19
 
 ### Added
