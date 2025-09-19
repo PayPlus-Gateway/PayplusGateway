@@ -1,11 +1,26 @@
 # Changelog
 
-## [1.2.9] - 2025-09-19
+## [1.3.0] - 2025-09-19
 
 ### Added
 
-- Added automatic order cancellation feature for abandoned payment pages, which restores inventory and unredeemed coupons when enabled in plugin settings.
-- Added full-page iframe payment option that provides a complete page payment interface experience, activated through plugin settings.
+- Added universal iframe compatibility across all Magento themes with robust header detection and fallback mechanisms
+- Added intelligent cache invalidation and inventory reindexing after order cancellation to ensure immediate stock updates
+- Added proper postMessage handling for iframe payment completion with correct redirect flow to success pages
+- Improved order cancellation logic with comprehensive logging and duplicate prevention
+
+### Enhanced
+
+- Enhanced automatic order cancellation feature for abandoned payment pages with better stock restoration
+- Enhanced full-page iframe payment option with loading indicators and better error handling
+- Enhanced theme compatibility for both "Next Page" and "Same Page" iframe modes
+
+### Fixed
+
+- Fixed stock availability display issues on cart page after order cancellation
+- Fixed JavaScript errors in iframe initialization across different themes
+- Fixed payment completion redirect flow to properly go to checkout success page instead of cart
+
 
 ## [1.2.7] - 2025-08-25
 
