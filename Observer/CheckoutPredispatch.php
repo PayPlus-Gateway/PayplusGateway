@@ -2,6 +2,7 @@
 
 namespace Payplus\PayplusGateway\Observer;
 
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Customer\Model\Session as CustomerSession;
@@ -60,6 +61,9 @@ class CheckoutPredispatch implements ObserverInterface
      */
     protected $sessionManager;
 
+    /** @var ResourceConnection */
+    protected $resourceConnection;
+
     public function __construct(
         CustomerSession $customerSession,
         CheckoutSession $checkoutSession,
@@ -69,7 +73,8 @@ class CheckoutPredispatch implements ObserverInterface
         \Magento\Framework\Stdlib\DateTime\DateTime $dateTime,
         \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone,
         ScopeConfigInterface $scopeConfig,
-        \Magento\Customer\Model\Session $sessionManager
+        \Magento\Customer\Model\Session $sessionManager,
+        ResourceConnection $resourceConnection
     ) {
         $this->customerSession = $customerSession;
         $this->checkoutSession = $checkoutSession;
@@ -80,6 +85,7 @@ class CheckoutPredispatch implements ObserverInterface
         $this->timezone = $timezone;
         $this->scopeConfig = $scopeConfig;
         $this->sessionManager = $sessionManager;
+        $this->resourceConnection = $resourceConnection;
     }
 
     /**
@@ -167,9 +173,13 @@ class CheckoutPredispatch implements ObserverInterface
         }
 
         // For guest customers, try to get email from quote
-        $quote = $this->checkoutSession->getQuote();
-        if ($quote && $quote->getId()) {
-            $email = $quote->getCustomerEmail();
+        $quoteId = $this->checkoutSession->getQuoteId();
+        if (($quoteId)) {
+            $connection = $this->resourceConnection->getConnection('sales');
+            $select = $connection->select()
+                ->from($this->resourceConnection->getTableName('quote'), ['customer_email'])
+                ->where('entity_id = ?', $quoteId);
+            $email = $connection->fetchOne($select);
             if ($email) {
                 return [
                     'type' => 'email',
@@ -195,19 +205,6 @@ class CheckoutPredispatch implements ObserverInterface
     }
 
     /**
-     * Check if auto-reload cart after cancellation is enabled
-     *
-     * @return bool
-     */
-    protected function isAutoReloadCartEnabled()
-    {
-        return $this->scopeConfig->isSetFlag(
-            'payment/payplus_gateway/orders_config/auto_reload_cart_after_cancel',
-            ScopeInterface::SCOPE_STORE
-        );
-    }
-
-    /**
      * Process pending orders for the current customer
      *
      * @param array $customerIdentifier
@@ -216,16 +213,14 @@ class CheckoutPredispatch implements ObserverInterface
      */
     protected function processPendingOrders($customerIdentifier, $currentPage = 'unknown')
     {
-        // Get current quote to check if there's an active reserved order
-        $currentQuote = $this->checkoutSession->getQuote();
-        $currentReservedOrderId = $currentQuote ? $currentQuote->getReservedOrderId() : null;
+        $currentReservedOrderId = $this->getCurrentReservedOrderId();
 
         $this->logger->info('PayPlus Gateway - Processing orders', [
             'customer_type' => $customerIdentifier['type'],
             'customer_identifier' => $customerIdentifier['value'],
             'current_page' => $currentPage,
             'current_reserved_order_id' => $currentReservedOrderId,
-            'quote_id' => $currentQuote ? $currentQuote->getId() : null
+            'quote_id' => $this->checkoutSession->getQuoteId()
         ]);
 
         // Get today's date range in store timezone (extended to include yesterday to catch edge cases)
@@ -298,14 +293,20 @@ class CheckoutPredispatch implements ObserverInterface
             'orders_cancelled' => $ordersCancelled,
             'page' => $currentPage
         ]);
+    }
 
-        // If we're on the cart page and cancelled orders, check if auto-reload is enabled
-        if ($currentPage === 'cart' && $ordersCancelled > 0 && $this->isAutoReloadCartEnabled()) {
-            $this->logger->info('PayPlus Gateway - Auto-reload enabled, reloading cart page after cancelling ' . $ordersCancelled . ' orders');
-            $this->reloadPage();
-        } elseif ($currentPage === 'cart' && $ordersCancelled > 0) {
-            $this->logger->info('PayPlus Gateway - Auto-reload disabled in configuration, skipping page reload after cancelling ' . $ordersCancelled . ' orders');
+    private function getCurrentReservedOrderId()
+    {
+        $currentQuoteId = $this->checkoutSession->getQuoteId();
+        if (!$currentQuoteId) {
+            return null;
         }
+        $connection = $this->resourceConnection->getConnection('sales');
+        $select = $connection->select()
+            ->from($this->resourceConnection->getTableName('quote'), ['reserved_order_id'])
+            ->where('entity_id = ?', $currentQuoteId);
+        $result = $connection->fetchRow($select);
+        return $result['reserved_order_id'];
     }
 
     /**
@@ -357,36 +358,6 @@ class CheckoutPredispatch implements ObserverInterface
                     'order_id' => $order->getId()
                 ]
             );
-        }
-    }
-
-    /**
-     * Reload the current page to refresh stock display
-     *
-     * @return void
-     */
-    protected function reloadPage()
-    {
-        try {
-            // Get current URL
-            $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
-            
-            // Add a parameter to prevent caching and indicate this is a stock refresh
-            $separator = strpos($currentUrl, '?') !== false ? '&' : '?';
-            $refreshUrl = $currentUrl . $separator . 'payplus_refresh=' . time();
-            
-            // Use PHP header redirect to reload the page
-            if (!headers_sent()) {
-                header('Location: ' . $refreshUrl, true, 302);
-                exit;
-            } else {
-                // Fallback: Use JavaScript if headers already sent
-                echo '<script type="text/javascript">window.location.href = "' . htmlspecialchars($refreshUrl, ENT_QUOTES, 'UTF-8') . '";</script>';
-                exit;
-            }
-            
-        } catch (\Exception $e) {
-            $this->logger->error('PayPlus Gateway - Error reloading page: ' . $e->getMessage());
         }
     }
 }
