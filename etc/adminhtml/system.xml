@@ -185,6 +185,24 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout or cart page again. This prevents duplicate orders and automatically restores coupon usage and stock using Magento's built-in OrderService. Supported on checkout, cart, and one-step checkout pages.</comment>
                     </field>
+                    <field id="enable_order_sync_cron" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable Order Sync Cron</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, automatically syncs today's cancelled/pending Payplus orders every 30 minutes to check for successful payments that may have been missed.</comment>
+                    </field>
+                    <field id="enable_order_sync_button" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Show Manual Sync Button</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, displays a manual sync button in the configuration page to manually trigger order sync and view results.</comment>
+                    </field>
+                    <field id="order_sync_button" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Manual Order Sync</label>
+                        <frontend_model>Payplus\PayplusGateway\Block\System\Config\Form\Field\SyncButton</frontend_model>
+                        <depends>
+                            <field id="enable_order_sync_button">1</field>
+                        </depends>
+                        <comment>Click to manually sync today's cancelled/pending Payplus orders and check for successful payments.</comment>
+                    </field>
                 </group>
                 <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
                     <attribute type="expanded">1</attribute>
