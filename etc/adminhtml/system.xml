@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.3.1 ) </label>
+                <label>PayPlus - Payment Gateway ( 1.3.3 ) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
@@ -185,13 +185,23 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout or cart page again. This prevents duplicate orders and automatically restores coupon usage and stock using Magento's built-in OrderService. Supported on checkout, cart, and one-step checkout pages.</comment>
                     </field>
-                    <field id="auto_reload_cart_after_cancel" translate="label" type="select" sortOrder="55" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Auto-reload cart page after order cancellation</label>
+                    <field id="enable_order_sync_cron" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable Order Sync Cron</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <comment>When enabled, automatically reloads the cart page after cancelling orders to refresh stock display. Only works when "Cancel pending orders" is also enabled and customer is on cart page.</comment>
+                        <comment>When enabled, automatically syncs today's cancelled/pending Payplus orders every 30 minutes to check for successful payments that may have been missed.</comment>
+                    </field>
+                    <field id="enable_order_sync_button" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Show Manual Sync Button</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, displays a manual sync button in the configuration page to manually trigger order sync and view results.</comment>
+                    </field>
+                    <field id="order_sync_button" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Manual Order Sync</label>
+                        <frontend_model>Payplus\PayplusGateway\Block\System\Config\Form\Field\SyncButton</frontend_model>
                         <depends>
-                            <field id="cancel_and_restore_orders">1</field>
+                            <field id="enable_order_sync_button">1</field>
                         </depends>
+                        <comment>Click to manually sync today's cancelled/pending Payplus orders and check for successful payments.</comment>
                     </field>
                 </group>
                 <group id="invoices_config" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">

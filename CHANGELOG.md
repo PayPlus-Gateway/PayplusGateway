@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.3] - 2025-11-15
+
+### Added
+
+- Added automatic order synchronization feature to check and update status of cancelled or pending payment orders from today
+- Added cron job that runs every 30 minutes to automatically sync today's orders with payment gateway status
+- Added manual sync button in admin configuration with visual report showing sync results
+- Added configuration options to enable/disable cron job and manual sync button visibility
+- Orders with successful payments that were missed due to callback failures are now automatically processed and updated
+
+### Enhanced
+
+- Enhanced order status management by automatically detecting and processing successful payments that may have been missed
+
 ## [1.3.1] - 2025-09-21
 
 ### Added
