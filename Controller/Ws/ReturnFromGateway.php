@@ -2,6 +2,7 @@
 
 namespace Payplus\PayplusGateway\Controller\Ws;
 
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 
 class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiController
@@ -101,7 +102,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             }
 
             $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
-            $status = $orderResponse->processResponse($params);
+            $status = $orderResponse->processResponse($params, true);
 
             // Add payment response to order notes
             try {
@@ -174,7 +175,8 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         }
       */
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class)->truncate();
+        $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class);
+        $cartObject->getQuote()->setIsActive(false);
         $cartObject->saveQuote();
 
         if ($response['results']['status'] != 'success' || $status === false) {

@@ -1,34 +1,5 @@
 # Changelog
 
-## [1.3.1] - 2025-09-21
-
-### Added
-
-- Added configurable auto-refresh feature for cart page after order cancellation to ensure proper page updates across all themes, particularly when accessing previously saved products - configurable through plugin settings.
-
-
-## [1.3.0] - 2025-09-19
-
-### Added
-
-- Added universal iframe compatibility across all Magento themes with robust header detection and fallback mechanisms
-- Added intelligent cache invalidation and inventory reindexing after order cancellation to ensure immediate stock updates
-- Added proper postMessage handling for iframe payment completion with correct redirect flow to success pages
-- Improved order cancellation logic with comprehensive logging and duplicate prevention
-
-### Enhanced
-
-- Enhanced automatic order cancellation feature for abandoned payment pages with better stock restoration
-- Enhanced full-page iframe payment option with loading indicators and better error handling
-- Enhanced theme compatibility for both "Next Page" and "Same Page" iframe modes
-
-### Fixed
-
-- Fixed stock availability display issues on cart page after order cancellation
-- Fixed JavaScript errors in iframe initialization across different themes
-- Fixed payment completion redirect flow to properly go to checkout success page instead of cart
-
-
 ## [1.2.7] - 2025-08-25
 
 ### Fix
