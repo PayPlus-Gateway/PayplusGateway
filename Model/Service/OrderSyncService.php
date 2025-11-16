@@ -178,5 +178,84 @@ class OrderSyncService
 
         return $report;
     }
+
+    /**
+     * Sync a single order
+     * 
+     * @param \Magento\Sales\Model\Order $order
+     * @return bool True if sync was successful and order was updated, false otherwise
+     */
+    public function syncSingleOrder($order)
+    {
+        try {
+            $payment = $order->getPayment();
+            
+            // Only process Payplus orders
+            if (!$payment || $payment->getMethod() !== 'payplus_gateway') {
+                $this->logger->debugOrder('OrderSync: Not a Payplus order, skipping', [
+                    'order_id' => $order->getIncrementId()
+                ]);
+                return false;
+            }
+
+            // Get payment_request_uid from additional_data
+            $paymentData = $payment->getData();
+            $paymentRequestUid = $paymentData['additional_data'] ?? null;
+
+            // Fallback: try to get from paymentPageResponse
+            if (!$paymentRequestUid) {
+                $additionalInfo = $payment->getAdditionalInformation();
+                if (isset($additionalInfo['paymentPageResponse']['page_request_uid'])) {
+                    $paymentRequestUid = $additionalInfo['paymentPageResponse']['page_request_uid'];
+                }
+            }
+
+            if (!$paymentRequestUid) {
+                $this->logger->debugOrder('OrderSync: No payment_request_uid found', [
+                    'order_id' => $order->getIncrementId()
+                ]);
+                return false;
+            }
+
+            // Call IPN check
+            $response = $this->apiConnector->checkTransactionAgainstIPN([
+                'payment_request_uid' => $paymentRequestUid
+            ]);
+
+            // Check if response is successful
+            if (isset($response['results']['status']) && 
+                $response['results']['status'] === 'success' &&
+                isset($response['results']['code']) && 
+                $response['results']['code'] == 0 &&
+                isset($response['data']) &&
+                isset($response['data']['status_code']) &&
+                $response['data']['status_code'] === '000') {
+                
+                // Process the order like callback does
+                $orderResponse = new OrderResponse($order);
+                $orderResponse->processResponse($response['data'], true);
+                
+                $this->logger->debugOrder('OrderSync: Successfully processed order', [
+                    'order_id' => $order->getIncrementId(),
+                    'transaction_uid' => $response['data']['transaction_uid'] ?? null
+                ]);
+                
+                return true;
+            } else {
+                $this->logger->debugOrder('OrderSync: IPN check failed or transaction not approved', [
+                    'order_id' => $order->getIncrementId(),
+                    'response' => $response
+                ]);
+                return false;
+            }
+
+        } catch (\Exception $e) {
+            $this->logger->debugOrder('OrderSync: Error processing order', [
+                'order_id' => $order->getIncrementId() ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
 }
 
