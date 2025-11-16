@@ -18,7 +18,7 @@ class BeforeOrderCancel implements ObserverInterface
     protected $scopeConfig;
     protected $appState;
     protected $request;
-    const MAX_SYNC_ATTEMPTS = 5;
+    const MAX_SYNC_ATTEMPTS = 2;
     const SYNC_COUNTER_PREFIX = 'PAYPLUS_SYNC_COUNT:';
     const CONFIG_PATH_ENABLE_SYNC_ON_CANCEL = 'payment/payplus_gateway/orders_config/enable_sync_on_cancel';
 
@@ -159,7 +159,7 @@ class BeforeOrderCancel implements ObserverInterface
         // Get current sync count
         $syncCount = $this->getSyncCount($order);
 
-        // If we've already done 5 syncs, don't run again
+        // If we've already done 2 syncs, don't run again
         if ($syncCount >= self::MAX_SYNC_ATTEMPTS) {
             $this->logger->debugOrder('OrderSync: Max sync attempts reached, skipping', [
                 'order_id' => $order->getIncrementId(),
