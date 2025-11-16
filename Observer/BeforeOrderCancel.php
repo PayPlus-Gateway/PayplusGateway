@@ -8,12 +8,16 @@ use Payplus\PayplusGateway\Model\Service\OrderSyncService;
 use Payplus\PayplusGateway\Logger\Logger;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\App\State;
+use Magento\Framework\App\RequestInterface;
 
 class BeforeOrderCancel implements ObserverInterface
 {
     protected $orderSyncService;
     protected $logger;
     protected $scopeConfig;
+    protected $appState;
+    protected $request;
     const MAX_SYNC_ATTEMPTS = 5;
     const SYNC_COUNTER_PREFIX = 'PAYPLUS_SYNC_COUNT:';
     const CONFIG_PATH_ENABLE_SYNC_ON_CANCEL = 'payment/payplus_gateway/orders_config/enable_sync_on_cancel';
@@ -21,11 +25,15 @@ class BeforeOrderCancel implements ObserverInterface
     public function __construct(
         OrderSyncService $orderSyncService,
         Logger $logger,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        State $appState,
+        RequestInterface $request
     ) {
         $this->orderSyncService = $orderSyncService;
         $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
+        $this->appState = $appState;
+        $this->request = $request;
     }
 
     public function execute(Observer $observer)
@@ -45,6 +53,43 @@ class BeforeOrderCancel implements ObserverInterface
         )) {
             $this->logger->debugOrder('OrderSync: Feature disabled in configuration', [
                 'order_id' => $order->getIncrementId()
+            ]);
+            return;
+        }
+
+        // Skip sync if cancellation is happening from admin area (manual admin cancellation)
+        $isAdminRequest = false;
+        $areaCode = null;
+        
+        // Check area code
+        try {
+            $areaCode = $this->appState->getAreaCode();
+            if ($areaCode === \Magento\Framework\App\Area::AREA_ADMINHTML) {
+                $isAdminRequest = true;
+            }
+        } catch (\Exception $e) {
+            // Area code might not be set, check request path instead
+        }
+        
+        // Also check request path/route to detect admin requests
+        if (!$isAdminRequest && $this->request) {
+            $moduleName = $this->request->getModuleName();
+            $fullActionName = $this->request->getFullActionName();
+            $pathInfo = $this->request->getPathInfo();
+            
+            // Check if it's an admin route (adminhtml module or admin path)
+            if ($moduleName === 'adminhtml' || 
+                strpos($pathInfo, '/admin/') === 0 || 
+                strpos($fullActionName, 'adminhtml_') === 0) {
+                $isAdminRequest = true;
+            }
+        }
+        
+        if ($isAdminRequest) {
+            $this->logger->debugOrder('OrderSync: Skipping sync - manual admin cancellation', [
+                'order_id' => $order->getIncrementId(),
+                'area_code' => $areaCode ?? 'not_set',
+                'module' => $this->request ? $this->request->getModuleName() : 'no_request'
             ]);
             return;
         }
