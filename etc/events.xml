@@ -12,5 +12,8 @@
     </event>
     <event name="sales_order_place_after">
         <observer name="payplus_sales_order_place_after" instance="Payplus\PayplusGateway\Observer\AfterPlaceOrder"  />
-    </event> 
+    </event>
+    <event name="sales_order_save_before">
+        <observer name="payplus_before_order_cancel" instance="Payplus\PayplusGateway\Observer\BeforeOrderCancel" />
+    </event>
 </config>

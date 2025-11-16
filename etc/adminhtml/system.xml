@@ -185,6 +185,11 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <comment>When enabled, automatically cancels pending orders from today when the same customer enters checkout or cart page again. This prevents duplicate orders and automatically restores coupon usage and stock using Magento's built-in OrderService. Supported on checkout, cart, and one-step checkout pages.</comment>
                     </field>
+                    <field id="enable_sync_on_cancel" translate="label" type="select" sortOrder="55" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable Sync on Order Cancellation</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, automatically runs order sync when a Payplus order from today is about to be cancelled. This allows up to 5 sync attempts per order to check for successful payments. If a successful payment is found, the order status will be updated to processing/complete instead of being cancelled.</comment>
+                    </field>
                     <field id="enable_order_sync_cron" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable Order Sync Cron</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
