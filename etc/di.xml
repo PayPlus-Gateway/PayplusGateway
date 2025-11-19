@@ -249,4 +249,9 @@
         <plugin name="validate-agreements" disabled="true" />
     </type>
     
+    <!-- Plugin to conditionally show/hide payplus_order_sync cron job based on configuration -->
+    <type name="Magento\Cron\Model\ConfigInterface">
+        <plugin name="payplus_conditional_cron_job" type="Payplus\PayplusGateway\Plugin\Cron\ConfigPlugin" sortOrder="10" />
+    </type>
+    
 </config>
