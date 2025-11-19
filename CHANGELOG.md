@@ -1,4 +1,45 @@
 # Changelog
+## [1.3.3] - 2025-11-15
+
+### Added
+
+- Added automatic order synchronization feature to check and update status of cancelled or pending payment orders from today
+- Added cron job that runs every 30 minutes to automatically sync today's orders with payment gateway status
+- Added manual sync button in admin configuration with visual report showing sync results
+- Added configuration options to enable/disable cron job and manual sync button visibility
+- Orders with successful payments that were missed due to callback failures are now automatically processed and updated
+
+### Enhanced
+
+- Enhanced order status management by automatically detecting and processing successful payments that may have been missed
+
+## [1.3.1] - 2025-09-21
+
+### Added
+
+- Added configurable auto-refresh feature for cart page after order cancellation to ensure proper page updates across all themes, particularly when accessing previously saved products - configurable through plugin settings.
+
+
+## [1.3.0] - 2025-09-19
+
+### Added
+
+- Added universal iframe compatibility across all Magento themes with robust header detection and fallback mechanisms
+- Added intelligent cache invalidation and inventory reindexing after order cancellation to ensure immediate stock updates
+- Added proper postMessage handling for iframe payment completion with correct redirect flow to success pages
+- Improved order cancellation logic with comprehensive logging and duplicate prevention
+
+### Enhanced
+
+- Enhanced automatic order cancellation feature for abandoned payment pages with better stock restoration
+- Enhanced full-page iframe payment option with loading indicators and better error handling
+- Enhanced theme compatibility for both "Next Page" and "Same Page" iframe modes
+
+### Fixed
+
+- Fixed stock availability display issues on cart page after order cancellation
+- Fixed JavaScript errors in iframe initialization across different themes
+- Fixed payment completion redirect flow to properly go to checkout success page instead of cart
 
 ## [1.2.7] - 2025-08-25
 
