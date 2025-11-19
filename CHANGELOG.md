@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.4] - 2025-11-19
+
+- Improved cron synchronization and configured it to run every 15 minutes.
+- Added "Enable Sync on Order Cancellation" feature - When enabled, automatically triggers order synchronization when a Payplus order from today is about to be cancelled. This allows up to 2 sync attempts per order to verify payment status. If a successful payment is detected, the order status will be updated to processing/complete instead of being cancelled. Note: This feature depends on website configuration - it will not run if orders are not automatically set to cancelled status.
+
 ## [1.3.3] - 2025-11-15
 
 ### Added
