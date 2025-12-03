@@ -1,4 +1,9 @@
 # Changelog
+## [1.3.4] - 2025-12-01
+
+- Tweak - Enhanced OrderSync validation to verify order number, amount, and page_request_uid
+- Tweak - Each order now receives a unique page_request_uid for improved tracking and verification
+
 ## [1.3.3] - 2025-11-15
 
 ### Added
