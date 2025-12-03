@@ -57,6 +57,10 @@ class VaultOrderTransferFactory extends TransferFactoryBase implements TransferF
         $request['use_token'] = true;
         $request['credit_terms'] = 1;
         $request['create_token'] = false;
+        
+        // Add unique request identifier to ensure each API call is treated as unique
+        // This prevents Payplus from returning the same page_request_uid for multiple orders
+        $request['unique_request_id'] = uniqid('m2_vault_' . ($request['more_info'] ?? '') . '_', true);
         $transfer = $this->transferBuilder
             ->setBody($request)
             ->setUri($this->gatewayMethod)
