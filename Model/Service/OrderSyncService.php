@@ -130,9 +130,83 @@ class OrderSyncService
                         isset($response['data']['status_code']) &&
                         $response['data']['status_code'] === '000') {
                         
+                        // CRITICAL: Validate that the IPN response matches this order
+                        // Check more_info (order increment ID) matches
+                        $ipnMoreInfo = $response['data']['more_info'] ?? null;
+                        $orderIncrementId = $order->getIncrementId();
+                        
+                        if ($ipnMoreInfo !== $orderIncrementId) {
+                            $report['failed']++;
+                            $report['errors'][] = [
+                                'order_id' => $orderIncrementId,
+                                'error' => 'IPN response more_info does not match order ID',
+                                'ipn_more_info' => $ipnMoreInfo,
+                                'order_increment_id' => $orderIncrementId,
+                                'page_request_uid' => $paymentRequestUid
+                            ];
+                            $this->logger->debugOrder('OrderSync: IPN response more_info mismatch - possible duplicate page_request_uid', [
+                                'order_id' => $orderIncrementId,
+                                'ipn_more_info' => $ipnMoreInfo,
+                                'page_request_uid' => $paymentRequestUid,
+                                'message' => 'This indicates a duplicate page_request_uid issue - IPN response belongs to a different order'
+                            ]);
+                            continue;
+                        }
+                        
+                        // Check amount matches (with tolerance for rounding differences)
+                        $ipnAmount = isset($response['data']['amount']) ? (float)$response['data']['amount'] : null;
+                        $orderAmount = (float)$order->getGrandTotal();
+                        $amountDifference = abs($ipnAmount - $orderAmount);
+                        
+                        // Allow 0.01 tolerance for rounding differences
+                        if ($ipnAmount === null || $amountDifference > 0.01) {
+                            $report['failed']++;
+                            $report['errors'][] = [
+                                'order_id' => $orderIncrementId,
+                                'error' => 'IPN response amount does not match order amount',
+                                'ipn_amount' => $ipnAmount,
+                                'order_amount' => $orderAmount,
+                                'difference' => $amountDifference,
+                                'page_request_uid' => $paymentRequestUid
+                            ];
+                            $this->logger->debugOrder('OrderSync: IPN response amount mismatch - possible duplicate page_request_uid', [
+                                'order_id' => $orderIncrementId,
+                                'ipn_amount' => $ipnAmount,
+                                'order_amount' => $orderAmount,
+                                'difference' => $amountDifference,
+                                'page_request_uid' => $paymentRequestUid,
+                                'message' => 'This indicates a duplicate page_request_uid issue - IPN response belongs to a different order'
+                            ]);
+                            continue;
+                        }
+                        
                         // Process the order like callback does
                         $orderResponse = new OrderResponse($order);
                         $orderResponse->processResponse($response['data'], true);
+                        
+                        // Add order note with IPN response details
+                        $ipnNote = "=== OrderSync: Order moved to processing due to successful IPN check ===\n";
+                        $ipnNote .= "Order Number: " . $orderIncrementId . "\n";
+                        $ipnNote .= "IPN more_info: " . ($ipnMoreInfo ?? 'N/A') . "\n";
+                        $ipnNote .= "Match: " . ($ipnMoreInfo === $orderIncrementId ? '✓ YES' : '✗ NO') . "\n";
+                        $ipnNote .= "Transaction UID: " . ($response['data']['transaction_uid'] ?? 'N/A') . "\n";
+                        $ipnNote .= "Status: " . ($response['data']['status'] ?? 'N/A') . " (" . ($response['data']['status_code'] ?? 'N/A') . ")\n";
+                        $ipnNote .= "Amount: " . ($response['data']['amount'] ?? 'N/A') . " " . ($response['data']['currency'] ?? 'ILS') . "\n";
+                        $ipnNote .= "Payment Method: " . ($response['data']['method'] ?? 'N/A') . "\n";
+                        if (isset($response['data']['approval_num']) && !empty($response['data']['approval_num'])) {
+                            $ipnNote .= "Approval Number: " . $response['data']['approval_num'] . "\n";
+                        }
+                        if (isset($response['data']['voucher_num']) && !empty($response['data']['voucher_num'])) {
+                            $ipnNote .= "Voucher Number: " . $response['data']['voucher_num'] . "\n";
+                        }
+                        if (isset($response['data']['date']) && !empty($response['data']['date'])) {
+                            $ipnNote .= "Transaction Date: " . $response['data']['date'] . "\n";
+                        }
+                        $ipnNote .= "Page Request UID: " . $paymentRequestUid . "\n";
+                        $ipnNote .= "Synced at: " . date('Y-m-d H:i:s');
+                        
+                        $order->addStatusHistoryComment($ipnNote, false);
+                        $order->save();
                         
                         $report['successful']++;
                         $report['processed_orders'][] = [
@@ -231,9 +305,66 @@ class OrderSyncService
                 isset($response['data']['status_code']) &&
                 $response['data']['status_code'] === '000') {
                 
+                // CRITICAL: Validate that the IPN response matches this order
+                // Check more_info (order increment ID) matches
+                $ipnMoreInfo = $response['data']['more_info'] ?? null;
+                $orderIncrementId = $order->getIncrementId();
+                
+                if ($ipnMoreInfo !== $orderIncrementId) {
+                    $this->logger->debugOrder('OrderSync: IPN response more_info mismatch - possible duplicate page_request_uid', [
+                        'order_id' => $orderIncrementId,
+                        'ipn_more_info' => $ipnMoreInfo,
+                        'page_request_uid' => $paymentRequestUid,
+                        'message' => 'This indicates a duplicate page_request_uid issue - IPN response belongs to a different order'
+                    ]);
+                    return false;
+                }
+                
+                // Check amount matches (with tolerance for rounding differences)
+                $ipnAmount = isset($response['data']['amount']) ? (float)$response['data']['amount'] : null;
+                $orderAmount = (float)$order->getGrandTotal();
+                $amountDifference = abs($ipnAmount - $orderAmount);
+                
+                // Allow 0.01 tolerance for rounding differences
+                if ($ipnAmount === null || $amountDifference > 0.01) {
+                    $this->logger->debugOrder('OrderSync: IPN response amount mismatch - possible duplicate page_request_uid', [
+                        'order_id' => $orderIncrementId,
+                        'ipn_amount' => $ipnAmount,
+                        'order_amount' => $orderAmount,
+                        'difference' => $amountDifference,
+                        'page_request_uid' => $paymentRequestUid,
+                        'message' => 'This indicates a duplicate page_request_uid issue - IPN response belongs to a different order'
+                    ]);
+                    return false;
+                }
+                
                 // Process the order like callback does
                 $orderResponse = new OrderResponse($order);
                 $orderResponse->processResponse($response['data'], true);
+                
+                // Add order note with IPN response details
+                $ipnNote = "=== OrderSync: Order moved to processing due to successful IPN check ===\n";
+                $ipnNote .= "Order Number: " . $orderIncrementId . "\n";
+                $ipnNote .= "IPN more_info: " . ($ipnMoreInfo ?? 'N/A') . "\n";
+                $ipnNote .= "Match: " . ($ipnMoreInfo === $orderIncrementId ? '✓ YES' : '✗ NO') . "\n";
+                $ipnNote .= "Transaction UID: " . ($response['data']['transaction_uid'] ?? 'N/A') . "\n";
+                $ipnNote .= "Status: " . ($response['data']['status'] ?? 'N/A') . " (" . ($response['data']['status_code'] ?? 'N/A') . ")\n";
+                $ipnNote .= "Amount: " . ($response['data']['amount'] ?? 'N/A') . " " . ($response['data']['currency'] ?? 'ILS') . "\n";
+                $ipnNote .= "Payment Method: " . ($response['data']['method'] ?? 'N/A') . "\n";
+                if (isset($response['data']['approval_num']) && !empty($response['data']['approval_num'])) {
+                    $ipnNote .= "Approval Number: " . $response['data']['approval_num'] . "\n";
+                }
+                if (isset($response['data']['voucher_num']) && !empty($response['data']['voucher_num'])) {
+                    $ipnNote .= "Voucher Number: " . $response['data']['voucher_num'] . "\n";
+                }
+                if (isset($response['data']['date']) && !empty($response['data']['date'])) {
+                    $ipnNote .= "Transaction Date: " . $response['data']['date'] . "\n";
+                }
+                $ipnNote .= "Page Request UID: " . $paymentRequestUid . "\n";
+                $ipnNote .= "Synced at: " . date('Y-m-d H:i:s');
+                
+                $order->addStatusHistoryComment($ipnNote, false);
+                $order->save();
                 
                 $this->logger->debugOrder('OrderSync: Successfully processed order', [
                     'order_id' => $order->getIncrementId(),

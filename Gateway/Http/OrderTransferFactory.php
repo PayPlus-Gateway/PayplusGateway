@@ -46,6 +46,10 @@ class OrderTransferFactory extends TransferFactoryBase implements TransferFactor
             'payment/payplus_gateway/api_configuration/payment_page_uid',
             $scp
         );
+        
+        // Add unique request identifier to ensure each API call is treated as unique
+        // This prevents Payplus from returning the same page_request_uid for multiple orders
+        $request['unique_request_id'] = uniqid('m2_' . $request['more_info'] . '_', true);
 
         $request['refURL_success'] = $getStoreURL.'payplus_gateway/ws/returnfromgateway';
         $request['refURL_failure'] = $getStoreURL.'checkout/onepage/failure';
