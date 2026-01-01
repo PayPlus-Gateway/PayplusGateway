@@ -87,11 +87,9 @@
                         </depends>
                     </field>
                     <field id="import_applepay_script" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Include Apple Pay Script in Iframe Mode (You have to join the service before)</label>
+                        <label>Include Apple Pay Script (You have to join the service before)</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <depends>
-                            <field id="iframe_or_redirect">iframe</field>
-                        </depends>
+                        <comment>Enable this to include the Apple Pay script. Available for both iframe and redirect payment modes.</comment>
                     </field>
                     <field id="display_payment_info_hebrew" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Display payment information in Hebrew</label>
