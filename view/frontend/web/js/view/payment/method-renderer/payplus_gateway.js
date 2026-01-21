@@ -276,11 +276,10 @@ define(
                         height: '100%',
                         border: 'none',
                         display: 'none'
-                    },
-                    load: function() {
-                        loadingIndicator.hide();
-                        $(this).show();
                     }
+                }).on('load', function() {
+                    loadingIndicator.hide();
+                    $(this).show();
                 });
 
                 // Assemble the overlay
