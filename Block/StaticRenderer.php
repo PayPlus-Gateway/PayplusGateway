@@ -20,7 +20,7 @@ class StaticRenderer extends \Magento\Backend\Block\AbstractBlock
             $om = \Magento\Framework\App\ObjectManager::getInstance();
             $page = $om->get(\Magento\Framework\View\Page\Config::class);
             $url = 'https://payments' . ($api_test_mode ? 'dev' : '') . '.payplus.co.il';
-            $url .= '/statics/applePay/script.js';
+            $url .= '/statics/applePay/scriptV2.js';
             $page->addRemotePageAsset($url, 'js');
         }
     }
