@@ -270,6 +270,8 @@ define(
 
                 // Create iframe
                 var iframe = $('<iframe>', {
+                    id: 'pp_iframe',
+                    allowpaymentrequest: 'allowpaymentrequest',
                     src: paymentUrl,
                     css: {
                         width: '100%',
