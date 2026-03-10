@@ -1,41 +1,48 @@
 # Changelog
+## [1.3.5] - 2026-02-11
+
+### Fixed
+
+- Fixed Apple Pay full-screen iframe compatibility by adding `allowpaymentrequest` attribute
+- Fixed iframe element ID from `pp-iframe` to `pp_iframe` across all payment forms (checkout same-page, next-page, and full-screen overlay)
+- Fixed Apple Pay Request API support on iframe_inline (full-screen) payment mode
+- Fixed CSP whitelist configuration to properly allow Apple Pay scripts
+
+### Enhanced
+
+- Enhanced Apple Pay script loading to always activate when enabled, regardless of page display method selected
+- Improved iframe JavaScript references to use consistent `pp_iframe` identifier throughout the codebase
+
 ## [1.3.4] - 2025-12-01
 
-- Tweak - Enhanced OrderSync validation to verify order number, amount, and page_request_uid
-- Tweak - Each order now receives a unique page_request_uid for improved tracking and verification
-
-## [1.3.3] - 2025-11-15
-
 ### Added
 
 - Added automatic order synchronization feature to check and update status of cancelled or pending payment orders from today
-- Added cron job that runs every 30 minutes to automatically sync today's orders with payment gateway status
+- Added cron job that runs every 15 minutes to automatically sync today's orders with payment gateway status
 - Added manual sync button in admin configuration with visual report showing sync results
 - Added configuration options to enable/disable cron job and manual sync button visibility
-- Orders with successful payments that were missed due to callback failures are now automatically processed and updated
-
-### Enhanced
-
-- Enhanced order status management by automatically detecting and processing successful payments that may have been missed
-
-## [1.3.4] - 2025-11-19
-
-- Improved cron synchronization and configured it to run every 15 minutes.
 - Added "Enable Sync on Order Cancellation" feature - When enabled, automatically triggers order synchronization when a Payplus order from today is about to be cancelled. This allows up to 2 sync attempts per order to verify payment status. If a successful payment is detected, the order status will be updated to processing/complete instead of being cancelled. Note: This feature depends on website configuration - it will not run if orders are not automatically set to cancelled status.
+- Added CSP (Content Security Policy) whitelist configuration for PayPlus payment forms
+- Added PHP 8.x compatibility fix with proper error handling for orders without ID during placement
+
+### Enhanced
+
+- Enhanced OrderSync validation to verify order number, amount, and page_request_uid
+- Enhanced order status management by automatically detecting and processing successful payments that may have been missed
+- Each order now receives a unique page_request_uid for improved tracking and verification
+- Orders with successful payments that were missed due to callback failures are now automatically processed and updated
+
+### Fixed
+
+- Fixed Apple Pay support on full-screen iframe mode
+- Fixed iframe ID from `pp-iframe` to `pp_iframe` for Apple Pay compatibility
+- Fixed `allowpaymentrequest` attribute on payment iframes
 
 ## [1.3.3] - 2025-11-15
 
 ### Added
 
-- Added automatic order synchronization feature to check and update status of cancelled or pending payment orders from today
-- Added cron job that runs every 30 minutes to automatically sync today's orders with payment gateway status
-- Added manual sync button in admin configuration with visual report showing sync results
-- Added configuration options to enable/disable cron job and manual sync button visibility
-- Orders with successful payments that were missed due to callback failures are now automatically processed and updated
-
-### Enhanced
-
-- Enhanced order status management by automatically detecting and processing successful payments that may have been missed
+- Initial implementation of order sync foundation
 
 ## [1.3.1] - 2025-09-21
 
