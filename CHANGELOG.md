@@ -1,5 +1,5 @@
 # Changelog
-## [1.3.5] - 2026-02-11
+## [1.3.6] - 2026-03-10
 
 ### Fixed
 
@@ -7,6 +7,7 @@
 - Fixed iframe element ID from `pp-iframe` to `pp_iframe` across all payment forms (checkout same-page, next-page, and full-screen overlay)
 - Fixed Apple Pay Request API support on iframe_inline (full-screen) payment mode
 - Fixed CSP whitelist configuration to properly allow Apple Pay scripts
+- Fixed module version number in module.xml
 
 ### Enhanced
 
