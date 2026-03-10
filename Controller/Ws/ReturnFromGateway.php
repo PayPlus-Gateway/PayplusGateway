@@ -2,6 +2,7 @@
 
 namespace Payplus\PayplusGateway\Controller\Ws;
 
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 
 class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiController
@@ -60,6 +61,154 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             ]);
         }
 
+        // Handle case where params array is completely empty (PayPlus API issue)
+        // Verify payment status via IPN before sending to success page
+        // Only apply this fix if enabled in plugin settings
+        $enableIpnVerificationEmptyParams = $this->config->isSetFlag(
+            'payment/payplus_gateway/orders_config/enable_ipn_verification_empty_params',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
+
+        if (empty($params) || count($params) === 0) {
+            if ($enableIpnVerificationEmptyParams) {
+                // Apply fix: verify payment via IPN
+                $this->_logger->debugOrder('Return params are completely empty - PayPlus API issue, verifying payment via IPN', [
+                    'params' => $params
+                ]);
+
+                try {
+                    // Get the last order from checkout session
+                    $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+                    $checkoutSession = $objectManager->create(\Magento\Checkout\Model\Session::class);
+                    $lastOrderId = $checkoutSession->getLastOrderId();
+
+                    if (!$lastOrderId) {
+                        $this->_logger->debugOrder('Empty params and no last order ID found in session - sending to failure', []);
+                        $resultRedirect->setPath('checkout/onepage/failure');
+                        return $resultRedirect;
+                    }
+
+                    $order = $objectManager->create(\Magento\Sales\Model\Order::class)->load($lastOrderId);
+
+                    if (!$order->getId()) {
+                        $this->_logger->debugOrder('Empty params and order not found - sending to failure', [
+                            'order_id' => $lastOrderId
+                        ]);
+                        $resultRedirect->setPath('checkout/onepage/failure');
+                        return $resultRedirect;
+                    }
+
+                    // Get page_request_uid from order payment (same as order syncer)
+                    $payment = $order->getPayment();
+                    $paymentData = $payment->getData();
+                    $paymentRequestUid = $paymentData['additional_data'] ?? null;
+
+                    // Fallback: try to get from paymentPageResponse
+                    if (!$paymentRequestUid) {
+                        $additionalInfo = $payment->getAdditionalInformation();
+                        if (isset($additionalInfo['paymentPageResponse']['page_request_uid'])) {
+                            $paymentRequestUid = $additionalInfo['paymentPageResponse']['page_request_uid'];
+                        }
+                    }
+
+                    if (!$paymentRequestUid) {
+                        $this->_logger->debugOrder('Empty params and no page_request_uid found in order - sending to failure', [
+                            'order_id' => $order->getIncrementId()
+                        ]);
+                        $resultRedirect->setPath('checkout/onepage/failure');
+                        return $resultRedirect;
+                    }
+
+                    // Verify payment status via IPN (same as order syncer)
+                    $response = $this->apiConnector->checkTransactionAgainstIPN([
+                        'payment_request_uid' => $paymentRequestUid
+                    ]);
+
+                    // Check if payment succeeded (same validation as order syncer)
+                    if (
+                        isset($response['results']['status']) &&
+                        $response['results']['status'] === 'success' &&
+                        isset($response['results']['code']) &&
+                        $response['results']['code'] == 0 &&
+                        isset($response['data']) &&
+                        isset($response['data']['status_code']) &&
+                        $response['data']['status_code'] === '000'
+                    ) {
+                        // Validate that IPN response matches this order (same as order syncer)
+                        $ipnMoreInfo = $response['data']['more_info'] ?? null;
+                        $orderIncrementId = $order->getIncrementId();
+
+                        if ($ipnMoreInfo !== $orderIncrementId) {
+                            $this->_logger->debugOrder('Empty params: IPN response more_info does not match order ID - sending to failure', [
+                                'order_id' => $orderIncrementId,
+                                'ipn_more_info' => $ipnMoreInfo,
+                                'page_request_uid' => $paymentRequestUid
+                            ]);
+                            $resultRedirect->setPath('checkout/onepage/failure');
+                            return $resultRedirect;
+                        }
+
+                        // Validate amount matches (same as order syncer)
+                        $ipnAmount = isset($response['data']['amount']) ? (float)$response['data']['amount'] : null;
+                        $orderAmount = (float)$order->getGrandTotal();
+                        $amountDifference = abs($ipnAmount - $orderAmount);
+
+                        if ($ipnAmount === null || $amountDifference > 0.01) {
+                            $this->_logger->debugOrder('Empty params: IPN response amount does not match order amount - sending to failure', [
+                                'order_id' => $orderIncrementId,
+                                'ipn_amount' => $ipnAmount,
+                                'order_amount' => $orderAmount,
+                                'difference' => $amountDifference
+                            ]);
+                            $resultRedirect->setPath('checkout/onepage/failure');
+                            return $resultRedirect;
+                        }
+
+                        // Process the order (same as order syncer) - this sets status according to plugin settings
+                        $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
+                        $orderResponse->processResponse($response['data'], true);
+
+                        $this->_logger->debugOrder('Empty params but IPN verification successful - order processed and sending to success page', [
+                            'order_id' => $order->getIncrementId(),
+                            'page_request_uid' => $paymentRequestUid,
+                            'status_code' => $response['data']['status_code'],
+                            'transaction_type' => $response['data']['type'] ?? 'not_set'
+                        ]);
+
+                        // Clear cart and send to success
+                        $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class);
+                        $cartObject->getQuote()->setIsActive(false);
+                        $cartObject->saveQuote();
+
+                        $resultRedirect->setPath('checkout/onepage/success');
+                        return $resultRedirect;
+                    } else {
+                        $this->_logger->debugOrder('Empty params and IPN verification failed - sending to failure', [
+                            'order_id' => $order->getIncrementId(),
+                            'page_request_uid' => $paymentRequestUid,
+                            'response_status' => $response['results']['status'] ?? 'not_set',
+                            'status_code' => $response['data']['status_code'] ?? 'not_set'
+                        ]);
+                        $resultRedirect->setPath('checkout/onepage/failure');
+                        return $resultRedirect;
+                    }
+                } catch (\Exception $e) {
+                    $this->_logger->debugOrder('Empty params and error during IPN verification - sending to failure', [
+                        'error' => $e->getMessage()
+                    ]);
+                    $resultRedirect->setPath('checkout/onepage/failure');
+                    return $resultRedirect;
+                }
+            } else {
+                // Fix disabled: send to failure when params are empty (old behavior)
+                $this->_logger->debugOrder('Return params are completely empty and payment fixes are disabled - sending to failure', [
+                    'params' => $params
+                ]);
+                $resultRedirect->setPath('checkout/onepage/failure');
+                return $resultRedirect;
+            }
+        }
+
         try {
             $response = $this->apiConnector->checkTransactionAgainstIPN([
                 'transaction_uid' => $params['transaction_uid'],
@@ -101,7 +250,7 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             }
 
             $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
-            $status = $orderResponse->processResponse($params);
+            $status = $orderResponse->processResponse($params, true);
 
             // Add payment response to order notes
             try {
@@ -174,7 +323,8 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         }
       */
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class)->truncate();
+        $cartObject = $objectManager->create(\Magento\Checkout\Model\Cart::class);
+        $cartObject->getQuote()->setIsActive(false);
         $cartObject->saveQuote();
 
         if ($response['results']['status'] != 'success' || $status === false) {

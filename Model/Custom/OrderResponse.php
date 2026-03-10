@@ -55,6 +55,10 @@ class OrderResponse
         $payment = $this->order->getPayment();
         $status = false;
 
+        if (!$direct) {
+            return $status;
+        }
+
         // Check if this is a multipass transaction
         $isMultipass = isset($params['method']) && strtolower($params['method']) === 'multipass';
         $isMultipleTransaction = isset($params['is_multiple_transaction']) &&

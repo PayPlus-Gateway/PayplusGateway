@@ -1,4 +1,22 @@
 # Changelog
+## [1.3.4] - 2025-12-01
+
+- Tweak - Enhanced OrderSync validation to verify order number, amount, and page_request_uid
+- Tweak - Each order now receives a unique page_request_uid for improved tracking and verification
+
+## [1.3.3] - 2025-11-15
+
+### Added
+
+- Added automatic order synchronization feature to check and update status of cancelled or pending payment orders from today
+- Added cron job that runs every 30 minutes to automatically sync today's orders with payment gateway status
+- Added manual sync button in admin configuration with visual report showing sync results
+- Added configuration options to enable/disable cron job and manual sync button visibility
+- Orders with successful payments that were missed due to callback failures are now automatically processed and updated
+
+### Enhanced
+
+- Enhanced order status management by automatically detecting and processing successful payments that may have been missed
 
 ## [1.3.4] - 2025-11-19
 
@@ -46,7 +64,6 @@
 - Fixed stock availability display issues on cart page after order cancellation
 - Fixed JavaScript errors in iframe initialization across different themes
 - Fixed payment completion redirect flow to properly go to checkout success page instead of cart
-
 
 ## [1.2.7] - 2025-08-25
 

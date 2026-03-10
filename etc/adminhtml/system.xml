@@ -87,11 +87,9 @@
                         </depends>
                     </field>
                     <field id="import_applepay_script" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Include Apple Pay Script in Iframe Mode (You have to join the service before)</label>
+                        <label>Include Apple Pay Script (You have to join the service before)</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                        <depends>
-                            <field id="iframe_or_redirect">iframe</field>
-                        </depends>
+                        <comment>Enable this to include the Apple Pay script. Available for both iframe and redirect payment modes.</comment>
                     </field>
                     <field id="display_payment_info_hebrew" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Display payment information in Hebrew</label>
@@ -194,6 +192,16 @@
                         <label>Enable Order Sync Cron</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <comment>When enabled, automatically syncs today's cancelled/pending Payplus orders every 15 minutes to check for successful payments that may have been missed.</comment>
+                    </field>
+                    <field id="enable_php8_compatibility_fix" translate="label" type="select" sortOrder="65" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable PHP 8.x Compatibility Fix (Handle Missing Order ID During Placement)</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, handles TypeError that occurs when order ID is null during order placement. Required for PHP 8.0+ due to strict type checking. Enable if you're experiencing "Return value must be of type int, null returned" errors.</comment>
+                    </field>
+                    <field id="enable_ipn_verification_empty_params" translate="label" type="select" sortOrder="66" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable IPN Verification When Return Params Are Empty</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, verifies payment status via IPN when PayPlus returns with empty params. This prevents false failures when payment actually succeeded but PayPlus API didn't include parameters in the return URL.</comment>
                     </field>
                     <field id="enable_order_sync_button" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Show Manual Sync Button</label>

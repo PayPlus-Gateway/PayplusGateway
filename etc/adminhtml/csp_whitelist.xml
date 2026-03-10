@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright © 2021 PayPlus LTD. All rights reserved.
+ * See readme.txt for license details.
+ */
+-->
+<csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp:etc/csp_whitelist.xsd">
+    <policies>
+        <!-- Allow PayPlus payment iframes -->
+        <policy id="frame-src">
+            <values>
+                <value id="payplus_payments_dev" type="host">paymentsdev.payplus.co.il</value>
+                <value id="payplus_payments_prod" type="host">payments.payplus.co.il</value>
+                <value id="payplus_payments_wildcard" type="host">*.payplus.co.il</value>
+            </values>
+        </policy>
+        <!-- Allow connections to PayPlus API -->
+        <policy id="connect-src">
+            <values>
+                <value id="payplus_api_dev" type="host">restapidev.payplus.co.il</value>
+                <value id="payplus_api_prod" type="host">restapi.payplus.co.il</value>
+                <value id="payplus_api_wildcard" type="host">*.payplus.co.il</value>
+            </values>
+        </policy>
+        <!-- Allow form submissions to PayPlus -->
+        <policy id="form-action">
+            <values>
+                <value id="payplus_form_dev" type="host">paymentsdev.payplus.co.il</value>
+                <value id="payplus_form_prod" type="host">payments.payplus.co.il</value>
+                <value id="payplus_form_wildcard" type="host">*.payplus.co.il</value>
+            </values>
+        </policy>
+        <!-- Allow images from PayPlus -->
+        <policy id="img-src">
+            <values>
+                <value id="payplus_images" type="host">*.payplus.co.il</value>
+            </values>
+        </policy>
+        <!-- Allow scripts from PayPlus (Apple Pay script) -->
+        <policy id="script-src">
+            <values>
+                <value id="payplus_payments_dev" type="host">paymentsdev.payplus.co.il</value>
+                <value id="payplus_payments_prod" type="host">payments.payplus.co.il</value>
+                <value id="payplus_payments_wildcard" type="host">*.payplus.co.il</value>
+            </values>
+        </policy>
+    </policies>
+</csp_whitelist>
