@@ -59,6 +59,21 @@ class OrderResponse
             return $status;
         }
 
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $logger = $objectManager->get(\Payplus\PayplusGateway\Logger\Logger::class);
+
+        // Check if this transaction was already processed to prevent duplicate capture
+        // Duplicate registerCaptureNotification() calls trigger Magento's fraud detection
+        $transactionUid = $params['transaction_uid'] ?? null;
+        if ($transactionUid && $this->isAlreadyProcessed($transactionUid)) {
+            $logger->debugOrder('Skipping duplicate transaction processing', [
+                'order_id' => $this->order->getIncrementId(),
+                'transaction_uid' => $transactionUid,
+                'order_state' => $this->order->getState(),
+            ]);
+            return true;
+        }
+
         // Check if this is a multipass transaction
         $isMultipass = isset($params['method']) && strtolower($params['method']) === 'multipass';
         $isMultipleTransaction = isset($params['is_multiple_transaction']) &&
@@ -188,5 +203,32 @@ class OrderResponse
         }
 
         return $status;
+    }
+
+    /**
+     * Check if this transaction was already processed (has a paid invoice or existing capture transaction).
+     * Prevents duplicate registerCaptureNotification() which triggers Magento's fraud detection.
+     */
+    private function isAlreadyProcessed($transactionUid)
+    {
+        if ($this->order->hasInvoices()) {
+            foreach ($this->order->getInvoiceCollection() as $invoice) {
+                if ($invoice->getState() == \Magento\Sales\Model\Order\Invoice::STATE_PAID) {
+                    return true;
+                }
+            }
+        }
+
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $searchCriteriaBuilder = $objectManager->get(\Magento\Framework\Api\SearchCriteriaBuilder::class);
+        $transactionRepository = $objectManager->get(\Magento\Sales\Api\TransactionRepositoryInterface::class);
+
+        $searchCriteria = $searchCriteriaBuilder
+            ->addFilter('txn_id', $transactionUid)
+            ->addFilter('txn_type', \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE)
+            ->create();
+
+        $transactions = $transactionRepository->getList($searchCriteria);
+        return $transactions->getTotalCount() > 0;
     }
 }
