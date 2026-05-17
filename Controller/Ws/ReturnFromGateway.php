@@ -327,9 +327,42 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
         $cartObject->getQuote()->setIsActive(false);
         $cartObject->saveQuote();
 
+        $enableFraudPrevention = $this->config->isSetFlag(
+            'payment/payplus_gateway/orders_config/enable_fraud_prevention',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
+
         if ($response['results']['status'] != 'success' || $status === false) {
             $resultRedirect->setPath('checkout/onepage/failure');
         } else {
+            if (!$enableFraudPrevention) {
+                $type = $response['data']['type'];
+
+                if ($type == "Charge") {
+                    $statusOrderPayplus = $this->config->getValue(
+                        'payment/payplus_gateway/api_configuration/status_order_payplus',
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                    );
+
+                    $stateOrderPayplus = $this->config->getValue(
+                        'payment/payplus_gateway/api_configuration/state_order_payplus',
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                    );
+
+                    $stateOrderPayplus = ($stateOrderPayplus) ? $stateOrderPayplus : 'complete';
+                    if ($statusOrderPayplus) {
+                        $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
+                        $order->addStatusHistoryComment($statusOrderPayplus . " order id :" . $params['more_info']);
+                        $order->setState($stateOrderPayplus)->setStatus($statusOrderPayplus);
+                        $order->save();
+                    } else {
+                        $statusOrder = Order::STATE_COMPLETE;
+                        $order = $objectManager->create(\Magento\Sales\Model\Order::class)->loadByIncrementId($params['more_info']);
+                        $order->setState($stateOrderPayplus)->setStatus($statusOrder);
+                        $order->save();
+                    }
+                }
+            }
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;

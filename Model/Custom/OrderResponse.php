@@ -62,16 +62,21 @@ class OrderResponse
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $logger = $objectManager->get(\Payplus\PayplusGateway\Logger\Logger::class);
 
-        // Check if this transaction was already processed to prevent duplicate capture
-        // Duplicate registerCaptureNotification() calls trigger Magento's fraud detection
-        $transactionUid = $params['transaction_uid'] ?? null;
-        if ($transactionUid && $this->isAlreadyProcessed($transactionUid)) {
-            $logger->debugOrder('Skipping duplicate transaction processing', [
-                'order_id' => $this->order->getIncrementId(),
-                'transaction_uid' => $transactionUid,
-                'order_state' => $this->order->getState(),
-            ]);
-            return true;
+        $enableFraudPrevention = $this->config->isSetFlag(
+            'payment/payplus_gateway/orders_config/enable_fraud_prevention',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
+
+        if ($enableFraudPrevention) {
+            $transactionUid = $params['transaction_uid'] ?? null;
+            if ($transactionUid && $this->isAlreadyProcessed($transactionUid)) {
+                $logger->debugOrder('Skipping duplicate transaction processing', [
+                    'order_id' => $this->order->getIncrementId(),
+                    'transaction_uid' => $transactionUid,
+                    'order_state' => $this->order->getState(),
+                ]);
+                return true;
+            }
         }
 
         // Check if this is a multipass transaction

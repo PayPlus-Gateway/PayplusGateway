@@ -203,6 +203,11 @@
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         <comment>When enabled, verifies payment status via IPN when PayPlus returns with empty params. This prevents false failures when payment actually succeeded but PayPlus API didn't include parameters in the return URL.</comment>
                     </field>
+                    <field id="enable_fraud_prevention" translate="label" type="select" sortOrder="67" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable Duplicate Capture Fraud Prevention</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>When enabled, prevents duplicate registerCaptureNotification() calls that can trigger Magento's "Suspected Fraud" status. This happens when multiple entry points (return URL, callback, cron sync) process the same order. Also fixes callback (IPN) processing and removes redundant status-setting in the return handler.</comment>
+                    </field>
                     <field id="enable_order_sync_button" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Show Manual Sync Button</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>

@@ -34,6 +34,7 @@
                     <payment_action>0</payment_action>
                     <email_upon_success>1</email_upon_success>
                     <debug_payplus_orders>1</debug_payplus_orders>
+                    <enable_fraud_prevention>0</enable_fraud_prevention>
                 </orders_config>
                 <payment_page>
                     <hide_payplus_icon>0</hide_payplus_icon>
