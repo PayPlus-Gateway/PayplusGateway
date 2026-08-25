@@ -223,9 +223,9 @@ abstract class BaseOrderRequest implements BuilderInterface
             ];
         }
 
-        $orderDetails['paying_vat'] = true;
+        $orderDetails['paying_vat'] = (bool)$config->getValue('payment/payplus_gateway/invoices_config/paying_vat', $scp);
 
-        if ($config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)  == 0) {
+        if ($orderDetails['paying_vat'] && $config->getValue('payment/payplus_gateway/invoices_config/no_vat_if_set_to_no_vat', $scp)) {
             $appliedTaxes = $quote->getShippingAddress()->getAppliedTaxes();
 
             if ($appliedTaxes !== null && empty($appliedTaxes)) {

@@ -47,6 +47,7 @@
                 <invoices_config>
                     <invoice_language_same_as_terminal>1</invoice_language_same_as_terminal>
                     <no_vat_if_set_to_no_vat>1</no_vat_if_set_to_no_vat>
+                    <paying_vat>1</paying_vat>
                 </invoices_config>
             </payplus_gateway>
             <payplus_gateway_bit>

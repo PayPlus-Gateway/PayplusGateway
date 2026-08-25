@@ -228,6 +228,11 @@
                         <label>Set invoice to Tax exempt based on Magento's tax settings</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
+                    <field id="paying_vat" translate="label" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Send paying_vat in payload</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>Yes = paying_vat is true (with VAT). No = paying_vat is false (without VAT). When set to Yes, the tax-exempt check above can still override to false if no taxes are applied.</comment>
+                    </field>
                 </group>
             </group>
             <group id="payplus_gateway_bit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
