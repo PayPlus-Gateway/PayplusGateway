@@ -49,7 +49,15 @@ class ConfigProvider implements ConfigProviderInterface
                         'payment/payplus_gateway/display_settings/iframe_height',
                         $scp
                     ),
-                    'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/'
+                    'getPaymentLinkURL'=>'/payplus_gateway/ws/link/id/',
+                    'mobile_fullscreen_iframe'=>(bool)$this->config->getValue(
+                        'payment/payplus_gateway/display_settings/mobile_fullscreen_iframe',
+                        $scp
+                    ),
+                    'mobile_fullscreen_close_position'=>$this->config->getValue(
+                        'payment/payplus_gateway/display_settings/mobile_fullscreen_close_position',
+                        $scp
+                    )
                 ],
                 'google_pay' => [
                     'title'=> $this->config->getValue(

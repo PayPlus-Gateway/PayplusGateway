@@ -44,8 +44,27 @@ class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $collection = $objectManager->create(\Magento\Sales\Model\Order::class);
         $order = $collection->loadByIncrementId($params['more_info']);
-        $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
-        $orderResponse->processResponse($params);
+
+        $enableFraudPrevention = $this->config->isSetFlag(
+            'payment/payplus_gateway/orders_config/enable_fraud_prevention',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
+
+        if ($enableFraudPrevention) {
+            if (!$order->getId()) {
+                $this->_logger->debugOrder('Callback: order not found', [
+                    'more_info' => $params['more_info'] ?? 'not_set'
+                ]);
+                $responseRequest->setData(['status' => 'failure']);
+                return $responseRequest;
+            }
+
+            $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
+            $orderResponse->processResponse($params, true);
+        } else {
+            $orderResponse = new \Payplus\PayplusGateway\Model\Custom\OrderResponse($order);
+            $orderResponse->processResponse($params);
+        }
 
         $responseRequest->setData(['status' => 'success']);
         return $responseRequest;
