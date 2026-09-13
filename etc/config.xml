@@ -29,6 +29,8 @@
                 <display_settings>
                     <iframe_or_redirect>redirect</iframe_or_redirect>
                     <iframe_height>700</iframe_height>
+                    <mobile_fullscreen_iframe>0</mobile_fullscreen_iframe>
+                    <mobile_fullscreen_close_position>auto</mobile_fullscreen_close_position>
                 </display_settings>
                 <orders_config>
                     <payment_action>0</payment_action>

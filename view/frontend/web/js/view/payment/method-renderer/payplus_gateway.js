@@ -167,17 +167,23 @@ define(
             },
 
             showFullScreenIframe: function(paymentUrl) {
+                var mobileFullscreen = window.checkoutConfig.payment.payplus_gateway.mobile_fullscreen_iframe;
+                var isMobile = $(window).width() <= 768;
+                var useMobileMode = mobileFullscreen && isMobile;
+
                 // Get header height to position iframe below it
                 var headerHeight = 0;
-                var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
-                if (header.length > 0) {
-                    headerHeight = header.outerHeight();
+                if (!useMobileMode) {
+                    var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
+                    if (header.length > 0) {
+                        headerHeight = header.outerHeight();
+                    }
                 }
 
-                // Calculate available height (viewport height minus header)
+                // Calculate available height
                 var availableHeight = $(window).height() - headerHeight;
 
-                // Create full-width overlay starting after header
+                // Create full-width overlay
                 var overlay = $('<div>', {
                     id: 'payplus-fullscreen-overlay',
                     css: {
@@ -193,50 +199,100 @@ define(
                     }
                 });
 
-                // Create header bar with close button
-                var headerBar = $('<div>', {
-                    css: {
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '15px 20px',
-                        backgroundColor: '#fff',
-                        borderBottom: '1px solid #ddd'
-                    }
-                });
+                if (useMobileMode) {
+                    // Mobile mode: full viewport, no header bar, floating × button
+                    overlay.css({ top: 0, height: '100%' });
 
-                var title = $('<h3>', {
-                    text: $t('Complete Your Payment'),
-                    css: {
-                        margin: 0,
-                        fontSize: '18px',
-                        color: '#333'
+                    var forcedPosition = window.checkoutConfig.payment.payplus_gateway.mobile_fullscreen_close_position || 'auto';
+                    var placeOnLeft;
+                    if (forcedPosition === 'left') {
+                        placeOnLeft = true;
+                    } else if (forcedPosition === 'right') {
+                        placeOnLeft = false;
+                    } else {
+                        placeOnLeft = $('html').attr('dir') === 'rtl' || $('body').css('direction') === 'rtl';
                     }
-                });
-
-                // Create close button
-                var closeButton = $('<button>', {
-                    text: $t('Close'),
-                    css: {
-                        background: '#f5f5f5',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        padding: '8px 15px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        color: '#666'
-                    },
-                    hover: function() {
-                        $(this).css('backgroundColor', '#e9e9e9');
-                    },
-                    click: function() {
-                        overlay.remove();
-                        // Optionally redirect back to cart
-                        window.location.href = url.build('checkout/cart');
+                    var closePosition = {};
+                    if (placeOnLeft) {
+                        closePosition.left = '8px';
+                    } else {
+                        closePosition.right = '8px';
                     }
-                });
 
-                headerBar.append(title, closeButton);
+                    var closeButton = $('<button>', {
+                        html: '&times;',
+                        css: $.extend({
+                            position: 'absolute',
+                            top: '8px',
+                            zIndex: 10002,
+                            background: 'rgba(0,0,0,0.5)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '36px',
+                            height: '36px',
+                            fontSize: '22px',
+                            lineHeight: '36px',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            padding: 0
+                        }, closePosition),
+                        click: function() {
+                            overlay.remove();
+                            $(window).off('resize.payplus message.payplus');
+                            $('.checkout-container, .page-main').show();
+                            window.location.href = url.build('checkout/cart');
+                        }
+                    });
+
+                    overlay.append(closeButton);
+                } else {
+                    // Desktop mode: header bar with title and close button
+                    var headerBar = $('<div>', {
+                        css: {
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '15px 20px',
+                            backgroundColor: '#fff',
+                            borderBottom: '1px solid #ddd'
+                        }
+                    });
+
+                    var title = $('<h3>', {
+                        text: $t('Complete Your Payment'),
+                        css: {
+                            margin: 0,
+                            fontSize: '18px',
+                            color: '#333'
+                        }
+                    });
+
+                    var closeButton = $('<button>', {
+                        text: $t('Close'),
+                        css: {
+                            background: '#f5f5f5',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            padding: '8px 15px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            color: '#666'
+                        },
+                        hover: function() {
+                            $(this).css('backgroundColor', '#e9e9e9');
+                        },
+                        click: function() {
+                            overlay.remove();
+                            $(window).off('resize.payplus message.payplus');
+                            $('.checkout-container, .page-main').show();
+                            window.location.href = url.build('checkout/cart');
+                        }
+                    });
+
+                    headerBar.append(title, closeButton);
+                    overlay.append(headerBar);
+                }
 
                 // Create iframe container (takes remaining space)
                 var iframeContainer = $('<div>', {
@@ -286,7 +342,7 @@ define(
 
                 // Assemble the overlay
                 iframeContainer.append(loadingIndicator, iframe);
-                overlay.append(headerBar, iframeContainer);
+                overlay.append(iframeContainer);
                 
                 // Add to body
                 $('body').append(overlay);
@@ -296,17 +352,23 @@ define(
 
                 // Handle window resize to maintain proper positioning
                 $(window).on('resize.payplus', function() {
-                    var newHeaderHeight = 0;
-                    var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
-                    if (header.length > 0) {
-                        newHeaderHeight = header.outerHeight();
+                    var stillMobile = $(window).width() <= 768;
+                    var useFullscreen = mobileFullscreen && stillMobile;
+
+                    if (useFullscreen) {
+                        overlay.css({ top: 0, height: '100%' });
+                    } else {
+                        var newHeaderHeight = 0;
+                        var header = $('.page-header, .header, .page-wrapper .header-container, .page-top');
+                        if (header.length > 0) {
+                            newHeaderHeight = header.outerHeight();
+                        }
+                        var newAvailableHeight = $(window).height() - newHeaderHeight;
+                        overlay.css({
+                            top: newHeaderHeight + 'px',
+                            height: newAvailableHeight + 'px'
+                        });
                     }
-                    var newAvailableHeight = $(window).height() - newHeaderHeight;
-                    
-                    overlay.css({
-                        top: newHeaderHeight + 'px',
-                        height: newAvailableHeight + 'px'
-                    });
                 });
 
                 // Listen for payment completion messages
