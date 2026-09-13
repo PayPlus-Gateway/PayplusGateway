@@ -1,4 +1,24 @@
 # Changelog
+## [1.3.7] - 2026-09-14
+
+### Added
+
+- Added "Prevent Suspected Fraud" feature to prevent duplicate `registerCaptureNotification()` calls that could trigger Magento's fraud detection (controlled via plugin settings checkbox)
+- Added `paying_vat` configuration setting for explicit control over the VAT flag sent in payment payloads
+- Added "Mobile: Full-screen iframe mode" setting — on mobile devices, the full-screen iframe removes the header bar and uses the entire viewport for the payment form
+- Added configurable close button position (Auto RTL/LTR, Left, Right) for mobile full-screen iframe mode
+- Added `CloseButtonPosition` source model for admin dropdown
+
+### Enhanced
+
+- Enhanced fraud prevention: callback IPN now correctly processes payments (previously was effectively a no-op)
+- Enhanced return-from-gateway logic to avoid redundant status/state re-setting when fraud prevention is enabled
+- Enhanced mobile full-screen iframe close button with RTL/LTR auto-detection (left for Hebrew, right for English)
+
+### Fixed
+
+- Fixed "Suspected Fraud" issue caused by race conditions between IPN callbacks, return-from-gateway, and order sync cron all calling `registerCaptureNotification()` on the same order
+
 ## [1.3.6] - 2026-03-10
 
 ### Fixed
