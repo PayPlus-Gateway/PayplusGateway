@@ -1,4 +1,11 @@
 # Changelog
+## [1.3.8] - 2026-09-14
+
+### Fixed
+
+- Re-released as 1.3.8 due to Packagist version immutability policy (1.3.7 tag was amended after initial publish)
+- Corrected CHANGELOG for 1.3.7 — removed entries for reverted processing/complete default change
+
 ## [1.3.7] - 2026-09-14
 
 ### Added
