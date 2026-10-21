@@ -1,4 +1,10 @@
 # Changelog
+## [1.4.0] - 2026-10-21
+
+### Fixed
+
+- Fixed customers being logged out (and the cart not being cleared) after a successful payment in iframe mode. Browsers do not send the `SameSite=Lax` session cookie when the PayPlus page inside the iframe returns to the store, so the return is now continued in the top window, where the session cookie is sent. Controlled by the new "Iframe: Keep customer logged in after payment" setting under Display settings (enabled by default)
+
 ## [1.3.9] - 2026-10-21
 
 ### Enhanced

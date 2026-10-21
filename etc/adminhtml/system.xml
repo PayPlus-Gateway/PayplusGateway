@@ -9,7 +9,7 @@
     <system>
         <section id="payment">
             <group id="payplus_gateway" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>PayPlus - Payment Gateway ( 1.3.9 ) </label>
+                <label>PayPlus - Payment Gateway ( 1.4.0 ) </label>
 
                 <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
@@ -98,6 +98,11 @@
                         <depends>
                             <field id="mobile_fullscreen_iframe">1</field>
                         </depends>
+                    </field>
+                    <field id="iframe_keep_session" translate="label comment" type="select" sortOrder="27" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Iframe: Keep customer logged in after payment</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <comment>Browsers do not send the store session cookie when the payment page inside the iframe returns to the store, which logs the customer out and leaves the cart full. When enabled, the return is continued in the main browser window so the customer's session is kept. Disable only if it causes problems on your store.</comment>
                     </field>
                     <field id="import_applepay_script" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Include Apple Pay Script (You have to join the service before)</label>

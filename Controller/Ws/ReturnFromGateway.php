@@ -7,6 +7,8 @@ use Magento\Sales\Model\Order;
 
 class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiController
 {
+    const TOP_WINDOW_PARAM = 'payplus_top';
+
     /**
      * @var \Magento\Framework\Controller\ResultFactory
      */
@@ -46,6 +48,10 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
 
         $resultRedirect = $this->resultFactory->create('redirect');
         $params = $this->request->getParams();
+        if ($this->shouldContinueInTopWindow($params)) {
+            return $this->createTopWindowContinuation($params);
+        }
+        unset($params[self::TOP_WINDOW_PARAM]);
         $this->_logger->debugOrder('params response get', $params);
 
         // Check if this is a multipass transaction
@@ -366,5 +372,100 @@ class ReturnFromGateway extends \Payplus\PayplusGateway\Controller\Ws\ApiControl
             $resultRedirect->setPath('checkout/onepage/success');
         }
         return $resultRedirect;
+    }
+
+    /**
+     * Browsers do not send the SameSite=Lax session cookie when the PayPlus page inside the
+     * checkout iframe navigates back to the store, so the return must be replayed in the top window.
+     */
+    private function shouldContinueInTopWindow(array $params)
+    {
+        if (!empty($params[self::TOP_WINDOW_PARAM])) {
+            return false;
+        }
+        if (!$this->config->isSetFlag(
+            'payment/payplus_gateway/display_settings/iframe_keep_session',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        )) {
+            return false;
+        }
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $sessionCookieName = $objectManager->get(\Magento\Framework\Session\Config\ConfigInterface::class)->getName()
+            ?: 'PHPSESSID';
+        $cookieReader = $objectManager->get(\Magento\Framework\Stdlib\CookieManagerInterface::class);
+        return $cookieReader->getCookie($sessionCookieName) === null;
+    }
+
+    private function createTopWindowContinuation(array $params)
+    {
+        $this->_logger->debugOrder('Return reached the store without the session cookie - continuing in the top window', [
+            'transaction_uid' => $params['transaction_uid'] ?? 'not_set',
+            'more_info' => $params['more_info'] ?? 'not_set',
+        ]);
+
+        // A new session was started for this cookieless request; its cookie must not replace the customer's.
+        if (!headers_sent()) {
+            header_remove('Set-Cookie');
+        }
+
+        $params[self::TOP_WINDOW_PARAM] = 1;
+        $method = strtoupper((string)$this->request->getMethod()) === 'POST' ? 'post' : 'get';
+        $action = strtok((string)$this->request->getRequestUri(), '?');
+
+        $inputs = '';
+        foreach ($this->flattenParams($params) as $name => $value) {
+            $inputs .= sprintf(
+                '<input type="hidden" name="%s" value="%s">',
+                htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($value, ENT_QUOTES, 'UTF-8')
+            );
+        }
+
+        $nonce = $this->getCspNonce();
+        $html = '<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">'
+            . '<title>' . htmlspecialchars((string)__('Completing your payment...'), ENT_QUOTES, 'UTF-8') . '</title></head>'
+            . '<body style="font-family:sans-serif;text-align:center;padding-top:40px">'
+            . '<form id="payplus-return" method="' . $method . '" action="'
+            . htmlspecialchars($action, ENT_QUOTES, 'UTF-8') . '" target="_top">' . $inputs
+            . '<p>' . htmlspecialchars((string)__('Completing your payment...'), ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<button type="submit">' . htmlspecialchars((string)__('Continue'), ENT_QUOTES, 'UTF-8') . '</button>'
+            . '</form>'
+            . '<script' . ($nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '') . '>'
+            . 'document.getElementById("payplus-return").submit();</script>'
+            . '</body></html>';
+
+        $result = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_RAW);
+        $result->setHeader('Content-Type', 'text/html; charset=UTF-8', true);
+        $result->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate', true);
+        $result->setContents($html);
+        return $result;
+    }
+
+    private function flattenParams(array $params, $prefix = '')
+    {
+        $flat = [];
+        foreach ($params as $key => $value) {
+            $name = $prefix === '' ? (string)$key : $prefix . '[' . $key . ']';
+            if (is_array($value)) {
+                $flat += $this->flattenParams($value, $name);
+            } else {
+                $flat[$name] = (string)$value;
+            }
+        }
+        return $flat;
+    }
+
+    private function getCspNonce()
+    {
+        if (!class_exists(\Magento\Csp\Helper\CspNonceProvider::class)) {
+            return '';
+        }
+        try {
+            return (string)\Magento\Framework\App\ObjectManager::getInstance()
+                ->get(\Magento\Csp\Helper\CspNonceProvider::class)
+                ->generateNonce();
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 }
