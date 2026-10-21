@@ -84,15 +84,20 @@ class OrderResponse
         $isMultipleTransaction = isset($params['is_multiple_transaction']) &&
             ($params['is_multiple_transaction'] === true || $params['is_multiple_transaction'] === 'true');
 
-        // ...existing code...
+        $paymentType = $params['type'] ?? '';
 
         if ($params['status_code'] != '000') {
             $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_VOID;
             $payment->deny();
         } else {
+            if ($paymentType !== 'Approval' && $paymentType !== 'Charge') {
+                throw new \Magento\Framework\Exception\LocalizedException(
+                    __('Unsupported PayPlus transaction type "%1" for order %2', $paymentType, $this->order->getIncrementId())
+                );
+            }
             $this->order->setCanSendNewEmailFlag(true);
             $this->order->setSendEmail(true);
-            if ($params['type'] == 'Approval') {
+            if ($paymentType == 'Approval') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_AUTH;
                 $payment->registerAuthorizationNotification($params['amount']);
                 $payment->setIsTransactionPending(true);
@@ -101,7 +106,7 @@ class OrderResponse
                 $this->order->setStatus($this->statusApprovalGlobal);
             }
 
-            if ($params['type'] == 'Charge') {
+            if ($paymentType == 'Charge') {
                 $transactionType = \Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE;
                 $payment->registerCaptureNotification($params['amount']);
 

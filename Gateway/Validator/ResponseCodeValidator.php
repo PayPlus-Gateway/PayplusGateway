@@ -48,7 +48,7 @@ class ResponseCodeValidator extends AbstractValidator
             );
         } else {
 
-            if($response['message']==="API_KEY / SECRET_KEY ARE INCORRECT"){
+            if(($response['message'] ?? null)==="API_KEY / SECRET_KEY ARE INCORRECT"){
                 $apikey =  $this->config->getValue(
                     'payment/payplus_gateway/api_configuration/api_key',
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
@@ -56,7 +56,10 @@ class ResponseCodeValidator extends AbstractValidator
                 $secretKey = $this->config->getValue(
                     'payment/payplus_gateway/api_configuration/secret_key',
                     \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-                $response['message'].="(current details: API KEY: ".$apikey." , SECRET KEY : ".$secretKey.")";
+                $response['message'].="(current details: API KEY: "
+                    .\Payplus\PayplusGateway\Model\Custom\APIConnector::maskSecret($apikey)
+                    ." , SECRET KEY : "
+                    .\Payplus\PayplusGateway\Model\Custom\APIConnector::maskSecret($secretKey).")";
             }
             $this->_logger->debugOrder("Order response error", $response);
             return $this->createResult(

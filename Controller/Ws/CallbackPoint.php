@@ -30,14 +30,22 @@ class CallbackPoint extends \Payplus\PayplusGateway\Controller\Ws\ApiController
         if (!isset( $params['transaction']) || !is_array ($params['transaction'])) {
             throw new \InvalidArgumentException('Response does not exist');
         }
+        if (empty($params['transaction']['uid']) || empty($params['transaction']['payment_page_request_uid'])) {
+            $this->_logger->debugOrder('Callback: missing transaction identifiers', $params['transaction']);
+            // Keep a 5xx status so PayPlus still treats the callback as not delivered.
+            $responseRequest->setHttpResponseCode(500);
+            $responseRequest->setData(['status' => 'failure']);
+            return $responseRequest;
+        }
         $response = $this->apiConnector->checkTransactionAgainstIPN([
             'transaction_uid' =>  $params['transaction']['uid'],
             'payment_request_uid' =>  $params['transaction']['payment_page_request_uid']
         ]);
 
-        if (!isset($response['data']) || $response['data']['status_code'] !== '000') {
+        if (!isset($response['data']['status_code']) || $response['data']['status_code'] !== '000') {
+            $responseRequest->setHttpResponseCode(500);
             $responseRequest->setData(['status' => 'failure']);
-            return $response;
+            return $responseRequest;
         }
         $params = $response['data'];
         $this->_logger->debugOrder('callback ipn payplus',$params);

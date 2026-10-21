@@ -38,6 +38,7 @@ class GetRedirect implements \Magento\Framework\App\ActionInterface
         $_quoteFactory = $objectManager->create(\Magento\Quote\Model\QuoteFactory::class);
         $order = $this->orderRepository->get($params['orderid']);
         $quote = $_quoteFactory->create()->loadByIdWithoutStore($order->getQuoteId());
+        $resultData = [];
         if ($quote->getId()) {
             $quote->setIsActive(1)->setReservedOrderId(null)->save();
             $_checkoutSession->replaceQuote($quote);
@@ -50,8 +51,7 @@ class GetRedirect implements \Magento\Framework\App\ActionInterface
         $payment = $order->getPayment();
         $additionalInformation = $payment->getAdditionalInformation();
         $paymentData = $payment->getData();
-        $resultData = [];
-        if ($paymentData['additional_data'] && $additionalInformation['awaiting_payment']) {
+        if (!empty($paymentData['additional_data']) && !empty($additionalInformation['awaiting_payment'])) {
             $additionalInformation['awaiting_payment'] = false;
             $payment->setAdditionalInformation($additionalInformation);
             $resultData['status'] = 'success';

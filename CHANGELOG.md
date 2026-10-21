@@ -1,4 +1,17 @@
 # Changelog
+## [1.3.9] - 2026-10-21
+
+### Enhanced
+
+- Declared support for PHP 8.4 and 8.5 in `composer.json` (tested on PHP 8.4 with Magento 2.4.9)
+- API key and secret are now masked (last 4 characters only) in PayPlus debug logs and in the "API_KEY / SECRET_KEY ARE INCORRECT" error message
+
+### Fixed
+
+- Fixed callback endpoint crashing when the IPN check fails or the callback is missing transaction identifiers; it now returns a JSON failure response (HTTP status unchanged)
+- Fixed `cart_items_count` being dropped from the GetRedirect response
+- Fixed undefined `$transactionType` in order response handling for unsupported transaction types; these now raise a clear error instead of a PHP warning
+
 ## [1.3.8] - 2026-09-14
 
 ### Fixed

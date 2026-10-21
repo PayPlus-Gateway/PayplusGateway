@@ -78,20 +78,21 @@ class APIConnector
         return $this->config->getValue(self::API_CNF.'secret_key', $scope);
     }
     public  function textApi($url){
-        $api_key = $this->getApiKey( self::SCPSTORES);
-        $secret_key = $this->getApiSecret( self::SCPSTORES);
-        $this->logger->debugOrder($url.'-Api Key And  Api Secret Key ('.self::SCPSTORES.')',array("api_key"=>$api_key,
-                "api_secret"=>$secret_key));
-        $api_key = $this->getApiKey( self::SCPWEBSITES);
-        $secret_key = $this->getApiSecret( self::SCPWEBSITES);
-        $this->logger->debugOrder($url.'-Api Key And  Api Secret Key ('.self::SCPWEBSITES.')',array("api_key"=>$api_key,
-            "api_secret"=>$secret_key));
+        foreach ([self::SCPSTORES, self::SCPWEBSITES, self::SCPSTORE] as $scope) {
+            $this->logger->debugOrder($url.'-Api Key And  Api Secret Key ('.$scope.')', array(
+                "api_key" => self::maskSecret($this->getApiKey($scope)),
+                "api_secret" => self::maskSecret($this->getApiSecret($scope))
+            ));
+        }
+    }
 
-        $api_key = $this->getApiKey( self::SCPSTORE);
-        $secret_key = $this->getApiSecret( self::SCPSTORE);
-        $this->logger->debugOrder($url.'-Api Key And  Api Secret Key ('.self::SCPSTORE.')',array("api_key"=>$api_key,
-            "api_secret"=>$secret_key));
-
+    public static function maskSecret($value)
+    {
+        $value = (string)$value;
+        if ($value === '') {
+            return '(empty)';
+        }
+        return str_repeat('*', max(strlen($value) - 4, 0)) . substr($value, -4);
     }
     private function getHeaders($url=null)
     {
